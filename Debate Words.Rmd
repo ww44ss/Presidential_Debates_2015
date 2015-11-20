@@ -1,0 +1,77 @@
+---
+title: "Debate Words"
+author: "Winston Saunders"
+date: "November 18, 2015"
+output: html_document
+---
+
+#Summary
+This analysis is based on the premise that part of the political divide in this country is not just about "what to do" but is more fundamentally about what the problems that need solving are. This is inspired by articles I read over the summer, such as this one in the [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) which emphasize polling results highlighting disagreement about the most important issues facing the United States.  
+The discourse and news people hear informs their opinions and priorities. Here I want to look systematically as the words used in both the Republican and Democratic debates. Are we talking past one another? Judge for yourself.
+
+#Republican Debates
+
+##Republican Candidates Debate October 28, 2015
+
+```{r, echo=FALSE}
+
+file_name<-"Republican Candidates Debate in Boulder Colorado October 28 2015.txt"
+
+Directory <- "/Users/winstonsaunders/Documents/Presidential_Debates_2015/"
+
+mydata = read.table(paste0(Directory, file_name), header=FALSE, sep="\n", stringsAsFactors = FALSE, quote = "")
+
+## This is what the data look like
+#mydata[100:105,1]
+        # [1] "QUINTANILLA: Hold it. We'll cut it back to you in just a minute. Becky's moving on."                                                                                                                                                                          
+        # [2] "QUICK: Dr. Carson, let's talk about taxes."                                                                                                                                                                                                                   
+        # [3] "You have a flat tax plan of 10 percent flat taxes, and — I've looked at it — and this is something that is very appealing to a lot of voters, but I've had a really tough time trying to make the math work on this."                                         
+        # [4] "If you were to took a 10 percent tax, with the numbers right now in total personal income, you're gonna come in with bring in $1.5 trillion. That is less than half of what we bring in right now. And by the way, it's gonna leave us in a $2 trillion hole."
+        # [5] "So what analysis got you to the point where you think this will work?"                                                                                                                                                                                        
+        # [6] "CARSON: Well, first of all, I didn't say that the rate would be 10 percent. I used the tithing analogy."
+
+```
+
+```{r, echo=FALSE}
+
+## Add a column of Candidate Names
+
+
+    mydata$n<-1:nrow(mydata)
+
+    ## This regex gets rid of all but the capitalized names
+    mydata$name <- gsub(":.+|^[A-Z][^A-Z].+", "", mydata$V1 )
+
+    ## clean up blank rows
+    for (i in 2: nrow(mydata)){
+        if (mydata$name[i] == "") mydata$name[i] <- mydata$name[i-1]
+    }
+
+    ## create just a column of text and eliminate multiple spaces
+    mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$V1)
+    mydata$text <- gsub ("   ", " ", mydata$text)
+    mydata$text <- gsub ("  ", " ", mydata$text)
+    
+    ## the data frame now contains four columns which look like this...
+    
+        #   50 Our greatest days lie ahead...
+        #   51 QUINTANILLA: Mr. Trump?
+        #   52 TRUMP: I think maybe ...[laughter]
+        #     n        name
+        # 50 50       RUBIO
+        # 51 51 QUINTANILLA
+        # 52 52       TRUMP
+        # text
+        # 50  Our greatest days lie ahead ....
+        # 51  Mr. Trump?
+        # 52  I think maybe my greatest weakness ... [laughter]
+
+```
+
+
+```{r echo=FALSE}
+    
+   
+     
+```
+
