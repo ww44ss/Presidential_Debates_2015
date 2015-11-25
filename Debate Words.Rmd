@@ -6,48 +6,52 @@ output: html_document
 ---
 
 #Summary
-This analysis is based on the premise that part of the political divide in this country is not just about "what to do" but is more fundamentally about what the problems that need solving are. This is inspired by articles I read over the summer, such as this one in the [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) which emphasize polling results highlighting disagreement about the most important issues facing the United States.  
-The discourse and news people hear informs their opinions and priorities. Here I want to look systematically as the words used in both the Republican and Democratic debates. Are we talking past one another? Judge for yourself.
+This analysis is based on the premise that part of the political divide is not  about "what to do" but, more fundamentally, about "what the problem is." This is inspired by articles I read over the summer, as in the [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston), which highlight disagreement about the most important issues.  
+People are influenced by what they hear. Here I want to look systematically as the _words_ used in both the Republican and Democratic debates. 
 
-#Republican Debates
+#Method
+The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were cut and pasted into Apple Pages, and then stored as unformated .txt files. From that point all processing is done with R using capabilities of the {tm} library.  
+Processing includes converting all text to lower case and removing, punctuation, stop words, and few selected words.  
 
-##Republican Candidates Debate October 28, 2015
-
-```{r, echo=FALSE}
-
-file_name<-"Republican Candidates Debate in Boulder Colorado October 28 2015.txt"
-
-Directory <- "/Users/winstonsaunders/Documents/Presidential_Debates_2015/"
-
-mydata = read.table(paste0(Directory, file_name), header=FALSE, sep="\n", stringsAsFactors = FALSE, quote = "")
-
-## This is what the data look like
-#mydata[100:105,1]
-        # [1] "QUINTANILLA: Hold it. We'll cut it back to you in just a minute. Becky's moving on."                                                                                                                                                                          
-        # [2] "QUICK: Dr. Carson, let's talk about taxes."                                                                                                                                                                                                                   
-        # [3] "You have a flat tax plan of 10 percent flat taxes, and — I've looked at it — and this is something that is very appealing to a lot of voters, but I've had a really tough time trying to make the math work on this."                                         
-        # [4] "If you were to took a 10 percent tax, with the numbers right now in total personal income, you're gonna come in with bring in $1.5 trillion. That is less than half of what we bring in right now. And by the way, it's gonna leave us in a $2 trillion hole."
-        # [5] "So what analysis got you to the point where you think this will work?"                                                                                                                                                                                        
-        # [6] "CARSON: Well, first of all, I didn't say that the rate would be 10 percent. I used the tithing analogy."
-
-```
-
-```{r, echo=FALSE}
-
-## Add a column of Candidate Names
+## STAYING ON MESSAGE
 
 
+Definite difference observed in the word clouds between candidates.  
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+
+load_debate_text <- function(file_name){
+
+## GET THE DATA
+    
+    ## data are the raw text files downloaded from the UCSB website.
+    
+    directory <- "/Users/winstonsaunders/Documents/Presidential_Debates_2015/"
+    mydata <- read.table(paste0(directory, file_name), header=FALSE, sep="\n", stringsAsFactors = FALSE, quote = "")
+
+    ## This is what a sample of the the raw data looks like
+    ## mydata[100:105,1]
+        # [1] "QUINTANILLA: Hold it. We'll cut it back to..."
+        # [2] "QUICK: Dr. Carson, let's talk about taxes."
+        # [3] "You have a flat tax plan of 10 percent flat taxes..."
+        # [4] "If you were to took a 10 percent tax..."
+        # [5] "So what analysis got you to the point where you think this will work?"
+        # [6] "CARSON: Well, first of all..."
+
+## ADD COLUMNS OF NUMBERS AND SEPARATE TEXT FROM CANDIDATE NAMES
+    ## Add number column
     mydata$n<-1:nrow(mydata)
 
     ## This regex gets rid of all but the capitalized names
     mydata$name <- gsub(":.+|^[A-Z][^A-Z].+", "", mydata$V1 )
 
-    ## clean up blank rows
+    ## Fill in the blank rows
     for (i in 2: nrow(mydata)){
         if (mydata$name[i] == "") mydata$name[i] <- mydata$name[i-1]
     }
 
-    ## create just a column of text and eliminate multiple spaces
+    ## CREATE COLUMN OF DEBATE TEXT AND CLEAN UP BLANK SPACES
     mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$V1)
     mydata$text <- gsub ("   ", " ", mydata$text)
     mydata$text <- gsub ("  ", " ", mydata$text)
@@ -65,13 +69,233 @@ mydata = read.table(paste0(Directory, file_name), header=FALSE, sep="\n", string
         # 50  Our greatest days lie ahead ....
         # 51  Mr. Trump?
         # 52  I think maybe my greatest weakness ... [laughter]
+    
+    return(mydata)
+}
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+candidate_text <- function(candidate, mydata){
+    ## 
+    ## GET CANDIDATE TEXT
+    ##
+    ## Assumes load_debate_text has been run and the debate text is stored in "mydata"
+    ## creates a text list
+    
+  
+    
+    ## filter for candidate
+    text<-mydata$text[mydata$name==candidate]
+    text<-paste(text, collapse = " ")
+
+    return(text)
+
+
+}
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+    library(tm)
+    library(RWeka)
+
+text_tc <- function(mydata){
+    ## 
+    ## 
+    ##
+    ## Assumes text is stored in "mydata"
+    ## creates a Corpus from the text
+    ## filters some words out 
+
+    require(tm)
+    require(SnowballC)
+
+    t_c <- Corpus(VectorSource(text))
+    t_c <- tm_map(t_c, content_transformer(tolower))
+    t_c <- tm_map(t_c, removePunctuation)
+    t_c <- tm_map(t_c, removeNumbers)
+    t_c <- tm_map(t_c, removeWords, stopwords("english"))
+    t_c <- tm_map(t_c, removeWords, c("applause", "thats"))
+
+    return(t_c)   
+    
+} 
 
 ```
 
 
-```{r echo=FALSE}
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+    library(tm)
+    library(RWeka)
+
+candidate_text_tc <- function(candidate, mydata){
+    ## 
+    ## GET CANDIDATE DATA
+    ##
+    ## Assumes load_debate_text has been run and the debate text is stored in "mydata"
+    ## creates a Corpus from the candidate text
+    
+  
+    
+    ## filter for candidate
+    text<-mydata$text[mydata$name==candidate]
+    text<-paste(text, collapse = " ")
+
+    require(tm)
+    require(SnowballC)
+
+    t_c <- Corpus(VectorSource(text))
+    t_c <- tm_map(t_c, content_transformer(tolower))
+    t_c <- tm_map(t_c, removePunctuation)
+    t_c <- tm_map(t_c, removeNumbers)
+    t_c <- tm_map(t_c, removeWords, stopwords("english"))
+    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter"))
+
+    return(t_c)   
+    
+} 
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+library(wordcloud)
+library(RColorBrewer)
+
+c_wordcloud <- function(t_c){
+    
+    ## 
+    ## CREATE WORD CLOUD
+    ##
+    ## Assumes a text Corpus has been created
+    ## 
+    
+    set.seed(0135)
     
    
-     
+    color_map2<-c("#00003B","#041851","#4E0812" ,"#051E65", "#650A16", "#103374",  "#9F1A2D", "#482B25")
+    
+    wordcloud(t_c, scale=c(4,0.4), max.words=40, min.freq=4, random.order=FALSE, rot.per=0.2, use.r.layout=FALSE, colors=color_map2)
+
+    
+
+}
+
 ```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+    ## GET ALL REPUB DEBATES
+     file_name<-"Republican Candidates Debate in Boulder Colorado October 28 2015.txt"
+     r_oct<-load_debate_text(file_name)
+     r_oct$date<-"Oct"
+     file_name<-"Republican Candidates Debate in Milwaukee Wisconsin November 10 2015.txt"
+     r_nov<-load_debate_text(file_name)
+     r_nov$date<-"Nov"
+    
+    r_all = rbind(r_oct, r_nov)
+        ## slim down data a bit
+        ## reduce data to about 30%
+#         r_all<-r_all[grepl("RUBIO", r_all$name)|
+#                          grepl("CARSON", r_all$name)|
+#                          grepl("TRUMP", r_all$name)|
+#                          grepl("CRUZ", r_all$name)|
+#                          grepl("HUCKABEE", r_all$name)|
+#                          grepl("FIORINA", r_all$name), ]
+    
+    
+    
+    ## GET ALL DEMO DEBATES
+     file_name<-"Democratic Candidates Debate in Las Vegas Nevada October 13 2015 .txt"
+     d_oct<-load_debate_text(file_name)
+     file_name<-"Democratic Candidates Debate in Des Monies Iowa November 14 2015 .txt"
+     d_nov<-load_debate_text(file_name)
+    
+    d_all = rbind(d_oct, d_nov)
+    
+    ## CREATE TCs FOR EACH CANDIDATE
+    trump_all<-candidate_text_tc("TRUMP",r_all)
+    rubio_all<-candidate_text_tc("RUBIO",r_all)
+    fiorina_all<-candidate_text_tc("FIORINA",r_all)
+    carson_all<-candidate_text_tc("FIORINA",r_all)
+    cruz_all<-candidate_text_tc("CRUZ",r_all)
+    huckabee_all<-candidate_text_tc("HUCKABEE",r_all)
+    bush_all<-candidate_text_tc("BUSH",r_all)
+
+    clinton_all<-candidate_text_tc("CLINTON",d_all)
+    sanders_all<-candidate_text_tc("SANDERS",d_all)
+    
+    
+    
+```
+
+
+
+
+<style>
+  .col2 {
+    columns: 2 300px;         /* number of columns and width in pixels*/
+    -webkit-columns: 2 300px; /* chrome, safari */
+    -moz-columns: 2 300px;    /* firefox */
+  }
+  .col3 {
+    columns: 3 200px;
+    -webkit-columns: 3 200px;
+    -moz-columns: 3 200px;
+  }
+</style>
+
+
+
+#Staying on Message
+
+Let's first just look at the word clouds of different candidates. In this first snapshot it makes sense just to combine the data from both the November and October debates of both parties and look a the words the canidates used during the discussions. Are there differences in the word frequencies used by candidates from different parties. Are there differences within the same party? 
+
+###COMPARING THE POPULISTS: TRUMP AND SANDERS
+
+Here are the word cloud of Donald Trump's and Bernie Sanders's dialogue at the debates.
+
+<div class="col2">
+
+
+```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
+c_wordcloud(trump_all)
+c_wordcloud(sanders_all)
+```
+
+</div>
+
+###COMPARING THE WOMEN: HILARY AND FIORINA
+
+<div class="col2">
+
+
+```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
+c_wordcloud(clinton_all)
+c_wordcloud(fiorina_all)
+```
+
+</div>
+
+###COMPARING BOMBASTS: CRUZ AND HUCKABEE
+
+<div class="col2">
+
+
+```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
+c_wordcloud(cruz_all)
+c_wordcloud(huckabee_all)
+```
+
+</div>
+
 
