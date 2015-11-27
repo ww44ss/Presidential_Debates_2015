@@ -2,21 +2,28 @@
 title: "Debate Words"
 author: "Winston Saunders"
 date: "November 18, 2015"
-output: html_document
+output: 
+html_document:
+theme: journal
 ---
 
-#Summary
-This analysis is based on the premise that part of the political divide is not  about "what to do" but, more fundamentally, about "what the problem is." This is inspired by articles I read over the summer, as in the [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston), which highlight disagreement about the most important issues.  
-People are influenced by what they hear. Here I want to look systematically as the _words_ used in both the Republican and Democratic debates. 
-
-#Method
-The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were cut and pasted into Apple Pages, and then stored as unformated .txt files. From that point all processing is done with R using capabilities of the {tm} library.  
-Processing includes converting all text to lower case and removing, punctuation, stop words, and few selected words.  
-
-## STAYING ON MESSAGE
+##SUMMARY
+This analysis is based on the premise that widening political divisions are not just about "what to do" but, more fundamentally, about "what the actual problem is." For instance even the conservative [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) highlighted disagreement about the most important issues.  
+Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question using recent texts the Republican and Democratic debates. 
+Key findings are:
+1. Candidate word choices differ, though there are some surprising (at least superficial) similarities between candidates of different parties
+2. Word associations 
 
 
-Definite difference observed in the word clouds between candidates.  
+##DATA SOURCES AND METHODS
+The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were pasted into Apple Pages and stored as unformated .txt files. From that point all processing is done with __R__ using capabilities of {tm} and associated libraries.  
+
+  
+
+##CANDIDATE WORD-CLOUDS
+
+The quickest and most visual method to compare texts is word-frequency analysis using wordclouds. 
+Not surprisingly, word choices vary significantly between candidates. However, there are also some striking similarities.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -42,7 +49,10 @@ load_debate_text <- function(file_name){
 ## ADD COLUMNS OF NUMBERS AND SEPARATE TEXT FROM CANDIDATE NAMES
     ## Add number column
     mydata$n<-1:nrow(mydata)
-
+    
+    ## get rid of "..."
+    #mydata$V1<-gsub("...", "", mydata$V1)
+    
     ## This regex gets rid of all but the capitalized names
     mydata$name <- gsub(":.+|^[A-Z][^A-Z].+", "", mydata$V1 )
 
@@ -52,6 +62,7 @@ load_debate_text <- function(file_name){
     }
 
     ## CREATE COLUMN OF DEBATE TEXT AND CLEAN UP BLANK SPACES
+    #$text <- gsub (".", "", mydata$text, fixed=TRUE)
     mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$V1)
     mydata$text <- gsub ("   ", " ", mydata$text)
     mydata$text <- gsub ("  ", " ", mydata$text)
@@ -97,7 +108,7 @@ candidate_text <- function(candidate, mydata){
 ```
 
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+```{r echo=13:22, warning=FALSE, message=FALSE}
 
     library(tm)
     library(RWeka)
@@ -177,7 +188,7 @@ c_wordcloud <- function(t_c){
     ## Assumes a text Corpus has been created
     ## 
     
-    set.seed(0135)
+    set.seed(8675309)
     
    
     color_map2<-c("#00003B","#041851","#4E0812" ,"#051E65", "#650A16", "#103374",  "#9F1A2D", "#482B25")
@@ -226,7 +237,7 @@ c_wordcloud <- function(t_c){
     trump_all<-candidate_text_tc("TRUMP",r_all)
     rubio_all<-candidate_text_tc("RUBIO",r_all)
     fiorina_all<-candidate_text_tc("FIORINA",r_all)
-    carson_all<-candidate_text_tc("FIORINA",r_all)
+    carson_all<-candidate_text_tc("CARSON",r_all)
     cruz_all<-candidate_text_tc("CRUZ",r_all)
     huckabee_all<-candidate_text_tc("HUCKABEE",r_all)
     bush_all<-candidate_text_tc("BUSH",r_all)
@@ -256,13 +267,12 @@ c_wordcloud <- function(t_c){
 
 
 
-#Staying on Message
 
-Let's first just look at the word clouds of different candidates. In this first snapshot it makes sense just to combine the data from both the November and October debates of both parties and look a the words the canidates used during the discussions. Are there differences in the word frequencies used by candidates from different parties. Are there differences within the same party? 
+Let's first just look at the word clouds of different candidates. Are there differences in the word frequencies used by candidates from different parties. Are there differences within the same party? 
 
 ###COMPARING THE POPULISTS: TRUMP AND SANDERS
 
-Here are the word cloud of Donald Trump's and Bernie Sanders's dialogue at the debates.
+Here are the word cloud of Donald Trump's and Bernie Sanders's dialogue at the debates. It's surprising that their frequent word choices like _people_, _country_, and _going_ are common, as if they are both painting a vision of the future that is personal (though radically different in nature).
 
 <div class="col2">
 
@@ -274,7 +284,9 @@ c_wordcloud(sanders_all)
 
 </div>
 
-###COMPARING THE WOMEN: HILARY AND FIORINA
+###THE WOMEN: HILARY AND CARLY
+
+In this case the choices of wrds couldn't be more different. Hilary emphasizes _think_ and _people_ while Carly, the business woman, primarily talks about _government_. 
 
 <div class="col2">
 
@@ -286,7 +298,9 @@ c_wordcloud(fiorina_all)
 
 </div>
 
-###COMPARING BOMBASTS: CRUZ AND HUCKABEE
+###WONK AND BOMBAST: CRUZ AND HUCKABEE
+
+Ted Cruz's vocabulary focuses on technicalities, like _taxes_, _growth_, and _percentages_, while Mike Huckabee's vocabulary is about _people_,  _government_, and _money_. 
 
 <div class="col2">
 
@@ -299,3 +313,85 @@ c_wordcloud(huckabee_all)
 </div>
 
 
+
+###STAYING ON MESSAGE: COMPARING DEBATES
+
+We can also split the texts by debate. Since the debates cover different topics and questions, one might expect to see this reflected in the text of the separate dialogues. What's surprising here is how comparable the language of each candidate is between the debates.
+
+<div class="col2">
+
+
+```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
+c_wordcloud(candidate_text_tc("TRUMP", r_oct))
+c_wordcloud(candidate_text_tc("TRUMP", r_nov))
+```
+</div>
+
+<div class="col2">
+
+
+```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
+c_wordcloud(candidate_text_tc("SANDERS", d_oct))
+c_wordcloud(candidate_text_tc("SANDERS", d_nov))
+```
+</div>
+
+
+##WORD ASSOCIATIONS
+
+
+```{r, echo=FALSE}
+
+## Create Term_Document_Matrices
+
+TDM_trump <- TermDocumentMatrix(trump_all)
+TDM_rubio <- TermDocumentMatrix(rubio_all)
+TDM_fiorina <- TermDocumentMatrix(fiorina_all)
+TDM_carson <- TermDocumentMatrix(carson_all)
+TDM_cruz <- TermDocumentMatrix(cruz_all)
+TDM_huckabee <- TermDocumentMatrix(huckabee_all)
+TDM_bush <- TermDocumentMatrix(bush_all)
+
+TDM_clinton <- TermDocumentMatrix(clinton_all)
+TDM_sanders <- TermDocumentMatrix(sanders_all)
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+findAssocs_candidate<-function(TDM, term){
+    ## reduce to lower case
+    term<-tolower(term)
+    ## find associations
+    x<-findAssocs(TDM, term, 0.1)
+    return(x)
+    
+}
+
+
+```
+
+```{r}
+findFreqTerms(TDM_trump, 15)
+findFreqTerms(TDM_sanders, 20)
+findFreqTerms(TDM_clinton, 20)
+findFreqTerms(TDM_fiorina, 10)
+findFreqTerms(TDM_cruz, 10)
+findFreqTerms(TDM_rubio, 10)
+
+
+
+
+
+```
+
+
+```{r, echo=FALSE}
+
+# findAssocs_candidate(TDM_trump,"country")
+# findAssocs_candidate(TDM_sanders,"people")
+# findAssocs_candidate(TDM_clinton,"people")
+# findAssocs_candidate(TDM_fiorina,"people")
