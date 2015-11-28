@@ -1,26 +1,26 @@
 ---
-title: "Debate Words"
+title: "Looking for Differences in Debate Words"
 author: "Winston Saunders"
 date: "November 18, 2015"
 output: 
-html_document:
-theme: journal
+    html_document:
+        theme: united
 ---
 
-##SUMMARY
+###SUMMARY
 This analysis is based on the premise that widening political divisions are not just about "what to do" but, more fundamentally, about "what the actual problem is." For instance even the conservative [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) highlighted disagreement about the most important issues.  
-Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question using recent texts the Republican and Democratic debates. 
+Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question looking for differences in the lanuguage of presidential candidates using texts from recent Republican and Democratic debates. 
 Key findings are:
-1. Candidate word choices differ, though there are some surprising (at least superficial) similarities between candidates of different parties
+1. "Wordcloud" visualization shows differences, though more surprising are similarities between candidates of different parties
 2. Word associations 
 
 
-##DATA SOURCES AND METHODS
+###DATA SOURCES AND METHODS
 The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were pasted into Apple Pages and stored as unformated .txt files. From that point all processing is done with __R__ using capabilities of {tm} and associated libraries.  
 
   
 
-##CANDIDATE WORD-CLOUDS
+###CANDIDATE WORD-CLOUDS
 
 The quickest and most visual method to compare texts is word-frequency analysis using wordclouds. 
 Not surprisingly, word choices vary significantly between candidates. However, there are also some striking similarities.  
@@ -48,7 +48,7 @@ load_debate_text <- function(file_name){
 
 ## ADD COLUMNS OF NUMBERS AND SEPARATE TEXT FROM CANDIDATE NAMES
     ## Add number column
-    mydata$n<-1:nrow(mydata)
+    #mydata$n<-1:nrow(mydata)
     
     ## get rid of "..."
     #mydata$V1<-gsub("...", "", mydata$V1)
@@ -62,10 +62,16 @@ load_debate_text <- function(file_name){
     }
 
     ## CREATE COLUMN OF DEBATE TEXT AND CLEAN UP BLANK SPACES
-    #$text <- gsub (".", "", mydata$text, fixed=TRUE)
-    mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$V1)
+    mydata$text <- gsub (".", "", mydata$V1, fixed=TRUE)
+    mydata$text <- gsub ("'", "", mydata$text)
+    mydata$text <- gsub ("=", "", mydata$text)
+    mydata$text <- tolower(mydata$text)
+    mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$text)
     mydata$text <- gsub ("   ", " ", mydata$text)
     mydata$text <- gsub ("  ", " ", mydata$text)
+    mydata$text <- gsub ("americans", "american", mydata$text)
+    
+    
     
     ## the data frame now contains four columns which look like this...
     
@@ -138,9 +144,6 @@ text_tc <- function(mydata){
 ```
 
 
-
-
-
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
     library(tm)
@@ -167,7 +170,7 @@ candidate_text_tc <- function(candidate, mydata){
     t_c <- tm_map(t_c, removePunctuation)
     t_c <- tm_map(t_c, removeNumbers)
     t_c <- tm_map(t_c, removeWords, stopwords("english"))
-    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter"))
+    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter", "dont", "back", "can", "get", "cant"))
 
     return(t_c)   
     
@@ -208,10 +211,10 @@ c_wordcloud <- function(t_c){
     ## GET ALL REPUB DEBATES
      file_name<-"Republican Candidates Debate in Boulder Colorado October 28 2015.txt"
      r_oct<-load_debate_text(file_name)
-     r_oct$date<-"Oct"
+     #r_oct$date<-"Oct"
      file_name<-"Republican Candidates Debate in Milwaukee Wisconsin November 10 2015.txt"
      r_nov<-load_debate_text(file_name)
-     r_nov$date<-"Nov"
+     #r_nov$date<-"Nov"
     
     r_all = rbind(r_oct, r_nov)
         ## slim down data a bit
@@ -250,8 +253,6 @@ c_wordcloud <- function(t_c){
 ```
 
 
-
-
 <style>
   .col2 {
     columns: 2 300px;         /* number of columns and width in pixels*/
@@ -270,7 +271,7 @@ c_wordcloud <- function(t_c){
 
 Let's first just look at the word clouds of different candidates. Are there differences in the word frequencies used by candidates from different parties. Are there differences within the same party? 
 
-###COMPARING THE POPULISTS: TRUMP AND SANDERS
+####THE POPULISTS: TRUMP AND SANDERS
 
 Here are the word cloud of Donald Trump's and Bernie Sanders's dialogue at the debates. It's surprising that their frequent word choices like _people_, _country_, and _going_ are common, as if they are both painting a vision of the future that is personal (though radically different in nature).
 
@@ -284,9 +285,9 @@ c_wordcloud(sanders_all)
 
 </div>
 
-###THE WOMEN: HILARY AND CARLY
+####THE WOMEN: HILARY AND CARLY
 
-In this case the choices of wrds couldn't be more different. Hilary emphasizes _think_ and _people_ while Carly, the business woman, primarily talks about _government_. 
+In this case word clouds couldn't be more different. Hilary's emphasizes _think_ and _people_ while Carly's, a former business woman, primarily emphasizes _government_. 
 
 <div class="col2">
 
@@ -298,9 +299,9 @@ c_wordcloud(fiorina_all)
 
 </div>
 
-###WONK AND BOMBAST: CRUZ AND HUCKABEE
+####WONK AND BOMBAST: CRUZ AND HUCKABEE
 
-Ted Cruz's vocabulary focuses on technicalities, like _taxes_, _growth_, and _percentages_, while Mike Huckabee's vocabulary is about _people_,  _government_, and _money_. 
+Ted Cruz's wordcloud emphasizes on wonkish technicalities, like _taxes_, _growth_, and _percentages_, while that of Mike Huckabee, a former minister, highlights _people_,  _government_, and _money_. 
 
 <div class="col2">
 
@@ -313,10 +314,9 @@ c_wordcloud(huckabee_all)
 </div>
 
 
-
 ###STAYING ON MESSAGE: COMPARING DEBATES
 
-We can also split the texts by debate. Since the debates cover different topics and questions, one might expect to see this reflected in the text of the separate dialogues. What's surprising here is how comparable the language of each candidate is between the debates.
+We can also split the text by debate. Since the debates cover different topics and questions, one might expect to see this reflected in the text of the separate dialogues. What's surprising here is how comparable the language of each candidate is between the debates.
 
 <div class="col2">
 
@@ -336,8 +336,34 @@ c_wordcloud(candidate_text_tc("SANDERS", d_nov))
 ```
 </div>
 
+####CONCLUSIONS
 
-##WORD ASSOCIATIONS
+Word clouds reveal differences between candidate word choices between candidates which hint at political preferences and opinions, but do not reveal significant differences in opinion about policy on important matters like taxes, terrorism, immigration, and class division. 
+
+###WORD FREQUENCY
+
+We can check word frequency directly by simply counting single words and looking for the most frequent words used by each candidate. 
+
+
+<style>
+
+table { 
+    width: 80%;
+    display: table;
+    border-collapse: collapse;
+    border-spacing: 18px;
+    border-color: gray;
+    background-color: #91c2e3;
+    text-align: center;
+    font: 18px arial, sans-serif;
+}
+th{
+    text-align: center;
+}, td {
+    
+    padding: 6px;
+}
+</style>
 
 
 ```{r, echo=FALSE}
@@ -366,7 +392,7 @@ findAssocs_candidate<-function(TDM, term){
     ## reduce to lower case
     term<-tolower(term)
     ## find associations
-    x<-findAssocs(TDM, term, 0.1)
+    x<-findAssocs(TDM, term, 0.5)
     return(x)
     
 }
@@ -374,16 +400,25 @@ findAssocs_candidate<-function(TDM, term){
 
 ```
 
-```{r}
-findFreqTerms(TDM_trump, 15)
-findFreqTerms(TDM_sanders, 20)
-findFreqTerms(TDM_clinton, 20)
-findFreqTerms(TDM_fiorina, 10)
-findFreqTerms(TDM_cruz, 10)
-findFreqTerms(TDM_rubio, 10)
+```{r, echo=FALSE, results='asis', fig.align='center'}
 
+library(xtable)
 
+row_names <- c("Trump", "Sanders", "Clinton", "Fiorina", "Cruz", "Rubio" )
+col_names <- c("First", "Second", "Third", "Fourth", "Fifth")
 
+word_mat<-matrix(
+    c(findFreqTerms(TDM_trump, 15)[1:5],
+      findFreqTerms(TDM_sanders, 20)[1:5],
+      findFreqTerms(TDM_clinton, 20)[1:5],
+      findFreqTerms(TDM_fiorina, 10)[1:5],
+      findFreqTerms(TDM_cruz, 10)[1:5],
+      findFreqTerms(TDM_rubio, 10)[1:5]), nrow = 6, byrow = TRUE, dimnames = list(row_names ,col_names ) )
+
+word_df<-as.data.frame(word_mat)
+
+print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE, 
+      html.table.attributes='border="3" align="center" ' )
 
 
 ```
@@ -391,7 +426,75 @@ findFreqTerms(TDM_rubio, 10)
 
 ```{r, echo=FALSE}
 
-# findAssocs_candidate(TDM_trump,"country")
+#findAssocs_candidate(TDM_trump,"country")
 # findAssocs_candidate(TDM_sanders,"people")
 # findAssocs_candidate(TDM_clinton,"people")
 # findAssocs_candidate(TDM_fiorina,"people")
+
+```
+
+
+
+
+```{r, echo=FALSE}
+
+library(RWeka)
+bigramTokenizer <- function(x) NGramTokenizer(x, 
+                                Weka_control(min = 2, max = 2))
+
+trump_bigrams <- sort(table(bigramTokenizer(trump_all)), decreasing = TRUE)
+sanders_bigrams <- sort(table(bigramTokenizer(sanders_all)), decreasing = TRUE)
+clinton_bigrams <- sort(table(bigramTokenizer(clinton_all)), decreasing = TRUE)
+fiorina_bigrams <- sort(table(bigramTokenizer(fiorina_all)), decreasing = TRUE)
+
+bigram_finder <- function(word, bigram_table){
+    relevant_bigrams <- bigram_table[grep(word, rownames(bigram_table), ignore.case=TRUE)]
+    return(relevant_bigrams)
+}
+
+```
+
+###TRUMP ON...
+
+The word __wall__ can be used in many contexts. Donald Trump mentions it in 
+
+```{r, echo=FALSE}
+
+
+bigram_finder("wall", trump_bigrams)[1:3]
+bigram_finder("class", trump_bigrams)[1:3]
+bigram_finder("terror", trump_bigrams)[1:3]
+bigram_finder("tax", trump_bigrams)[1:3]
+bigram_finder("terror", trump_bigrams)[1:3]
+
+```
+###FIORINA
+```{r, echo=FALSE}
+bigram_finder("country", fiorina_bigrams)[1:3]
+bigram_finder("wall", fiorina_bigrams)[1:3]
+bigram_finder("class", fiorina_bigrams)[1:3]
+bigram_finder("tax", fiorina_bigrams)[1:3]
+bigram_finder("terror", fiorina_bigrams)[1:3]
+
+```
+###SANDERS
+```{r, echo=FALSE}
+
+bigram_finder("country", sanders_bigrams)[1:3]
+bigram_finder("wall", sanders_bigrams)[1:3]
+bigram_finder("class", sanders_bigrams)[1:3]
+bigram_finder("tax", sanders_bigrams)[1:3]
+bigram_finder("terror", sanders_bigrams)[1:3]
+```
+###CLINTON
+```{r, echo=FALSE}
+bigram_finder("country", clinton_bigrams)[1:3]
+bigram_finder("wall", clinton_bigrams)[1:3]
+bigram_finder("class", clinton_bigrams)[1:3]
+bigram_finder("tax", clinton_bigrams)[1:3]
+bigram_finder("terror", clinton_bigrams)[1:3]
+
+
+
+
+```
