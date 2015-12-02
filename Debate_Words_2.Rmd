@@ -10,9 +10,10 @@ output:
 ###SUMMARY
 This analysis is based on the premise that widening political divisions are not just about "what to do" but, more fundamentally, about "what the actual problem is." For instance even the conservative [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) highlighted disagreement about the most important issues.  
 Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question looking for differences in the lanuguage of presidential candidates using texts from recent Republican and Democratic debates. 
-Key findings are:
-1. "Wordcloud" visualization shows differences, though more surprising are similarities between candidates of different parties
-2. Word associations 
+Key findings are:  
+1. "Wordcloud" visualization shows systematic differences between candidates, though more surprising are the similarities.  
+2. Word frquency analysis highlights positional differences between candidatates, but does not convey important context information.  
+3. Bigram toeknization and word-stem searches do the best job of revealing position differences between candidates.  
 
 
 ###DATA SOURCES AND METHODS
@@ -65,10 +66,17 @@ load_debate_text <- function(file_name){
     mydata$text <- gsub (".", "", mydata$V1, fixed=TRUE)
     mydata$text <- gsub ("'", "", mydata$text)
     mydata$text <- gsub ("=", "", mydata$text)
-    mydata$text <- tolower(mydata$text)
     mydata$text <- gsub ("[A-Z]{2,}: ", "", mydata$text)
+    mydata$text <- tolower(mydata$text)
     mydata$text <- gsub ("   ", " ", mydata$text)
     mydata$text <- gsub ("  ", " ", mydata$text)
+    ##stem a few words
+    mydata$text <- gsub ("taxes", "tax", mydata$text)
+    mydata$text <- gsub ("guns", "gun", mydata$text)
+    mydata$text <- gsub ("veterans", "veteran", mydata$text)
+    mydata$text <- gsub ("terrorists", "terror", mydata$text)
+    mydata$text <- gsub ("terrorism", "terror", mydata$text)
+    
     #mydata$text <- gsub ("americans", "american", mydata$text)
     #mydata$text <- gsub ("american", "america", mydata$text)
 
@@ -137,7 +145,7 @@ text_tc <- function(mydata){
     t_c <- tm_map(t_c, removePunctuation)
     t_c <- tm_map(t_c, removeNumbers)
     t_c <- tm_map(t_c, removeWords, stopwords("english"))
-    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter"))
+    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter", "dont", "back", "can", "get", "cant", "come", "big", "inaudible"))
 
     return(t_c)   
     
@@ -150,6 +158,7 @@ text_tc <- function(mydata){
 
     library(tm)
     library(RWeka)
+    library(SnowballC)
 
 candidate_text_tc <- function(candidate, mydata){
     ## 
@@ -172,8 +181,10 @@ candidate_text_tc <- function(candidate, mydata){
     t_c <- tm_map(t_c, removePunctuation)
     t_c <- tm_map(t_c, removeNumbers)
     t_c <- tm_map(t_c, removeWords, stopwords("english"))
-    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter", "dont", "back", "can", "get", "cant", "come", "big"))
+    t_c <- tm_map(t_c, removeWords, c("applause", "thats", "laughter", "dont", "back", "can", "get", "cant", "come", "big", "inaudible"))
 
+    #t_c <- tm_map(t_c, stemDocument)
+    
     return(t_c)   
     
 } 
@@ -184,6 +195,8 @@ candidate_text_tc <- function(candidate, mydata){
 
 library(wordcloud)
 library(RColorBrewer)
+
+ color_map2<-c("#00003B","#041851","#4E0812" ,"#051E65", "#650A16", "#103374",  "#9F1A2D", "#482B25")
 
 c_wordcloud <- function(t_c){
     
@@ -301,7 +314,7 @@ c_wordcloud(fiorina_all)
 
 </div>
 
-####THE ALSO-RANS: CRUZ AND HUCKABEE
+####BRAINS VERSUS BRAUN: CRUZ AND HUCKABEE
 
 Ted Cruz's wordcloud emphasizes wonkish technicalities, like _taxes_ and _washington_, while that of Mike Huckabee, a former minister, mixes the populist and a focus on  _government_. 
 
@@ -353,7 +366,7 @@ table {
     border-collapse: collapse;
     border-spacing: 18px;
     border-color: #AAAAFF;
-    background-color: #A55A66;
+    background-color: #D5CAB6;
     text-align: center;
     font: 16px arial, sans-serif;
 }
@@ -385,26 +398,12 @@ TDM_sanders <- TermDocumentMatrix(sanders_all)
 
 
 
-```{r, echo=FALSE}
-
-findAssocs_candidate<-function(TDM, term){
-    ## reduce to lower case
-    term<-tolower(term)
-    ## find associations
-    x<-findAssocs(TDM, term, 0.5)
-    return(x)
-    
-}
-
-
-```
-
 ```{r, echo=FALSE, results='asis', fig.align='center'}
 
 library(xtable)
 
 row_names <- c("Trump", "Sanders", "Clinton", "Fiorina", "Cruz", "Rubio" )
-col_names <- c("First", "Second", "Third", "Fourth", "Fifth")
+col_names <- c("most frequent", "Second", "Third", "Fourth", "Fifth")
 
 word_mat<-matrix(
     c(findFreqTerms(TDM_trump, 15)[1:5],
@@ -424,10 +423,10 @@ print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE,
 
 
 These tell a bit of a clearer story, i.e. we can almost read these words like sentences or sentence fragments. Both Bernie Sanders and Donald Trump again seems to come across similiarly as populists. The first ranking word for Donald Trump is _country_ and for Bernie Sanders it's _believe_. It's interesting to note that the notion of getting the "country going" comes through in the top three candidates.  
-More humorously, note that the word "clinton" figures in both Carly Fiorina's and Hilary Clinton's, whose texts almost read as an assertion by Hilary and an counter argument by Carly.  
-Ted Cruz's frequent words again seem to focus on business and Carlo Rubio loves the homeland.  
+More humorously, note that the word "clinton" figures in both Carly Fiorina's and Hilary Clinton's lists. These texts almost read as an assertion by Hilary and an counter argument by Carly.  
+Ted Cruz's frequent words again seem to focus on business and Carlo Rubio loves America.  
   
-So, while word frequencies reveal differences between the approaches and personalities of the candidates, they don't by themsleves elucidate differences on important policies. 
+While word frequencies reveal differences between the approaches and personalities of the candidates, they don't by themsleves elucidate differences on specific policies or attitudes. Let's try something else.
 
 ```{r, echo=FALSE}
 
@@ -439,9 +438,187 @@ So, while word frequencies reveal differences between the approaches and persona
 ```
 
 
+####GRAPHICAL REPRESENTATION
+
+There's additional information in whether words used frequently by one candidate are used at all by another candidate. While the wordlcloud analysis gives some insight, we can analysis the data graphically for more quantitative information. Here is a graph of the "top" words used by all candidates
+
+```{r, echo=FALSE}
+## Build a matrix owith counts of specific words for a list of candidates
+
+## First convert TDMs to Data Frames
+
+a<-as.matrix(TDM_trump)
+b<-as.data.frame(a)
+df_trump<-b
+colnames(df_trump)<-"trump"
+
+a<-as.matrix(TDM_sanders)
+b<-as.data.frame(a)
+df_sanders<-b
+colnames(df_sanders)<-"sanders"
+
+a<-as.matrix(TDM_fiorina)
+b<-as.data.frame(a)
+df_fiorina<-b
+colnames(df_fiorina)<-"fiorina"
+
+a<-as.matrix(TDM_clinton)
+b<-as.data.frame(a)
+df_clinton<-b
+colnames(df_clinton)<-"clinton"
+
+## merge the data frames
+
+merged_candidates<-merge(df_trump, df_sanders, by=0, all=TRUE)
+rownames(merged_candidates) <- merged_candidates$Row.names
+merged_candidates$Row.names <- NULL
+merged_candidates<-merge(merged_candidates, df_clinton, by="row.names", all=TRUE)
+rownames(merged_candidates)<-merged_candidates$Row.names
+merged_candidates$Row.names <- NULL
+merged_candidates<-merge(merged_candidates, df_fiorina, by="row.names", all=TRUE)
+
+
+## fix NAs
+merged_candidates[is.na(merged_candidates)]<-0
+
+##Get rid of self references
+merged_candidates["clinton", "clinton"]<-0
+merged_candidates["trump", "trump"]<-0
+merged_candidates["sanders", "sanders"]<-0
+merged_candidates["fiorina", "fiorina"]<-0
+
+## sum all
+merged_candidates$all <- merged_candidates$trump + merged_candidates$clinton + merged_candidates$sanders + merged_candidates$fiorina
+
+## sort it
+merged_candidates<-merged_candidates[with(merged_candidates, order(-all)), ]
+
+#merged_candidates <- merged_candidates[merged_candidates$all>50,]
+## convert Row.names to a factor
+merged_candidates$Row.names<-as.factor(merged_candidates$Row.names)
+
+merged_candidates<-merged_candidates[complete.cases(merged_candidates),]
+
+
+## This is what the data look like
+#       Row.names trump sanders clinton fiorina all
+# 1314     people    33      85      10      10 138
+# 1567    sanders     0     119       0       0 119
+# 747       going    44      44      10      10 108
+# 399     country    34      70       1       1 106
+# 680     fiorina     0       0      46      46  92
+# 756  government     0       7      40      40  87
+
+```
+
+```{r, echo=FALSE, fig.align="center", fig.height= 5, fig.width=4, message=FALSE, warning=FALSE}
+
+library(reshape2)
+
+merged_plot<-melt(merged_candidates[merged_candidates$all>50,])
+colnames(merged_plot)<-c("words", "candidate", "count")
+
+library(ggplot2)
+
+# p <- ggplot(merged_plot, aes(x = words, y = count, color=candidate))
+# p <- p + geom_point(size=3, pch=19)
+# p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+# p <- p + coord_flip()
+# p <- p + ggtitle("CANDIDATE WORD COUNT")
+# p <- p + xlab("word")
+# p <- p + ylab("count")
+# p 
+
+```
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
+mc<-merged_candidates
+mc$rank <- 1:nrow(mc)
+##normalize
+mc$clinton<-mc$clinton/sum(mc$clinton)
+mc$sanders<-mc$sanders/sum(mc$sanders)
+mc$trump<-mc$trump/sum(mc$trump)
+mc$fiorina<-mc$fiorina/sum(mc$fiorina)
+
+p <- ggplot(mc[mc$all>40,], aes(x = rank, size=3))
+#p <- p + geom_line(size=0.5)
+p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
+p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
+p <- p + geom_point(aes(y = trump, color="trump"), size=3)
+p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+p <- p + theme(axis.text.x=element_text(angle=90, vjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
+#p <- p + coord_flip()
+p <- p + scale_x_discrete(breaks=1:25,
+        labels=mc$Row.names)
+p <- p + ggtitle("CANDIDATE WORD COUNT")
+p <- p + xlab("")
+p <- p + ylab("normalized frequency")
+p 
+
+```
+
+The above doesn't reveal much more information than the wordcloud analysis does. However, we can also pick some "key words" and sample for their frequency. For a first stab, let's try
+
+
+```{r, echo = 6:7, fig.align="center", fig.height=4, fig.width=6, message=FALSE, warning=FALSE }
+
+library(reshape2)
+
+merged_plot<-melt(merged_candidates)
+colnames(merged_plot)<-c("words", "candidate", "count")
+
+key_words = c("tax", "government", "climate", "class", "wall", "terror", "economy", "immigrant", "america", "veteran", "drug", "health", "gun", "educat")
+merged_plot<-merged_plot[merged_plot$word %in% key_words, ]
+merged_plot<-merged_plot[!merged_plot$candidate=="all",]
+
+
+
+
+p <- ggplot(merged_plot, aes(x = words, y = count))
+p <- p + facet_grid(.~candidate)
+p <- p + geom_point(size=3, pch=19, color = "#228222")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + coord_flip()
+p <- p + ggtitle("DIFFERENCES IN CANDIDATE WORD CHOICE")
+p <- p + xlab("")
+p <- p + ylab("word count")
+p 
+
+
+
+mc<-mc[mc$Row.names %in% key_words,]
+mc$rank<-1:nrow(mc)
+
+head(mc)
+
+p <- ggplot(mc, aes(x = rank, size=3))
+#p <- p + geom_line(size=0.5)
+p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
+p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
+p <- p + geom_point(aes(y = trump, color="trump"), size=3)
+p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+p <- p + theme(axis.text.x=element_text(angle=90, hjust=1,face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
+#p <- p + coord_flip()
+p <- p + scale_x_discrete(breaks=1:25,
+        labels=mc$Row.names)
+p <- p + ggtitle("CANDIDATE WORD COUNT")
+p <- p + xlab("")
+p <- p + ylab("normalized frequency")
+p 
+
+```
+
+
+
 ###WORD ASSOCIATIONS FROM BIGRAM TOKENIZATION
 
+Since word fequency does not convey specific positions on issues, let's look at word associations to see if we can get closer to meaning from more information about the context of word usage. This analysis simply tokenizes the text as bigrams, then uses a simple function
 
+```{r eval=FALSE}
+bigram_table[grep(word, rownames(bigram_table), ignore.case=TRUE)]
+```
+
+to pull out relevant terms from the torkenized TDM.
+A key challenge is that the texts are relatively short, so statistics comparing the word frequencies are poor. Nevertheless, we can see that context around different words, even at the relatively unsophisticated level of simple bigrams, starts to hint at differences in approach to problems. 
 
 ```{r, echo=FALSE}
 
@@ -461,56 +638,113 @@ bigram_finder <- function(word, bigram_table){
 
 ```
 
-###TRUMP ON...
-
-The word __wall__ can be used in many contexts. Donald Trump mentions it in 
-
-```{r, echo=FALSE}
-require(xtable)
-
-word_sample <- "wall"
-a<- bigram_finder(word_sample, trump_bigrams)[1:3]
-
-word_assocs<-as.data.frame(c(word_sample, colnames(a)))
 
 
-print(xtable(word_assocs), type='html', comment=FALSE, include.rownames=TRUE, 
-      html.table.attributes='border="3" align="center" ' )
+###CANDIDATES ON TAXES
 
-
-bigram_finder("class", trump_bigrams)[1:3]
-bigram_finder("terror", trump_bigrams)[1:3]
-bigram_finder("tax", trump_bigrams)[1:3]
-bigram_finder("terror", trump_bigrams)[1:3]
-
-```
-###FIORINA
-```{r, echo=FALSE}
-
-bigram_finder("wall", fiorina_bigrams)[1:3]
-bigram_finder("class", fiorina_bigrams)[1:3]
-bigram_finder("tax", fiorina_bigrams)[1:3]
-bigram_finder("terror", fiorina_bigrams)[1:3]
-
-```
-###SANDERS
-```{r, echo=FALSE}
-
-
-bigram_finder("wall", sanders_bigrams)[1:3]
-bigram_finder("class", sanders_bigrams)[1:3]
-bigram_finder("tax", sanders_bigrams)[1:3]
-bigram_finder("terror", sanders_bigrams)[1:3]
-```
-###CLINTON
-```{r, echo=FALSE}
-
-bigram_finder("wall", clinton_bigrams)[1:3]
-bigram_finder("class", clinton_bigrams)[1:3]
-bigram_finder("tax", clinton_bigrams)[1:3]
-bigram_finder("terror", clinton_bigrams)[1:3]
+Bernie talks about _"tax"_ and _"terror"_ as well. His discussion of taxes has a reformist bent, but where Carly Fiorina talks associates words like budgeting, changes, reform, simplify, code, reform, and plan, Bernie Sanders associates words like cap, income, must, share, speculation, breaks, reform, wall, and rebuilding. 
 
 
 
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+
+
+word_sample <- "tax"
+a<-bigram_finder(word_sample, fiorina_bigrams)
+a<-as.data.frame(a)
+colnames(a)<-word_sample
+
+bigram_freq<-a
+
+library(ggplot2)
+
+p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+p <- p + geom_bar(fill="#751B1C", stat="identity")
+p <- p + ggtitle(paste0("FIORINA bigram sample: \"", word_sample,"\" "))
+p <- p + xlab("bigrams")
+p <- p + ylab("count")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0, 2, 4, 6, 8, 10))
+p <- p + coord_flip()
+plot_tax_fiorina <- p
+p
 
 ```
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+
+
+#word_sample <- "tax"
+a<-bigram_finder(word_sample, sanders_bigrams)
+a<-as.data.frame(a)
+colnames(a)<-word_sample
+
+bigram_freq<-a
+
+library(ggplot2)
+
+p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+p <- p + geom_bar(fill="#415DA3", stat="identity")
+p <- p + ggtitle(paste0("SANDERS bigram sample: \"", word_sample,"\" "))
+p <- p + xlab("bigrams")
+p <- p + ylab("count")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0,2,4,6,8,10))
+p <- p + coord_flip()
+plot_tax_sanders <- p
+
+plot_tax_sanders
+
+```
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+
+
+#word_sample <- "tax"
+a<-bigram_finder(word_sample, trump_bigrams)
+a<-as.data.frame(a)
+colnames(a)<-word_sample
+
+bigram_freq<-a
+
+library(ggplot2)
+
+p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+p <- p + geom_bar(fill="#751B1C", stat="identity")
+p <- p + ggtitle(paste0("TRUMP bigram sample: \"", word_sample,"\" "))
+p <- p + xlab("bigrams")
+p <- p + ylab("count")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0,2,4,6,8,10))
+p <- p + coord_flip()
+p
+
+```
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+
+
+#word_sample <- "tax"
+a<-bigram_finder(word_sample, clinton_bigrams)
+a<-as.data.frame(a)
+colnames(a)<-word_sample
+
+bigram_freq<-a
+
+library(ggplot2)
+
+p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+p <- p + geom_bar(fill="#415DA3", stat="identity")
+p <- p + ggtitle(paste0("CLINTON bigram sample: \"", word_sample,"\" "))
+p <- p + xlab("bigrams")
+p <- p + ylab("count")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0,2,4,6,8,10))
+p <- p + coord_flip()
+p
+
+
+
+```
+

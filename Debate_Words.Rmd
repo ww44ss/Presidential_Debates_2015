@@ -468,13 +468,12 @@ The word __wall__ can be used in many contexts. Donald Trump mentions it in
 ```{r, echo=FALSE}
 require(xtable)
 
-word_sample <- "wall"
-a<- bigram_finder(word_sample, trump_bigrams)[1:3]
-
-word_assocs<-as.data.frame(c(word_sample, colnames(a)))
+a<- bigram_finder("wall", trump_bigrams)[1:3]
 
 
-print(xtable(word_assocs), type='html', comment=FALSE, include.rownames=TRUE, 
+
+
+print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE, 
       html.table.attributes='border="3" align="center" ' )
 
 
