@@ -368,6 +368,7 @@ table {
     border-color: #AAAAFF;
     background-color: #D5CAB6;
     text-align: center;
+    padding: 2px;
     font: 16px arial, sans-serif;
 }
 th{
@@ -402,33 +403,29 @@ TDM_sanders <- TermDocumentMatrix(sanders_all)
 
 library(xtable)
 
-row_names <- c("Trump", "Sanders", "Clinton", "Fiorina", "Cruz", "Rubio" )
-col_names <- c("most frequent", "Second", "Third", "Fourth", "Fifth")
+## Create table of frequent terms
+## note: The Frequent Term utility does not rank by order. It produces a character vector of terms in x which occur more or equal often than lowfreq times and less or equal often than highfreq times.
 
-word_mat<-matrix(
-    c(findFreqTerms(TDM_trump, 30)[1:5],
-      findFreqTerms(TDM_sanders, 30)[1:5],
-      findFreqTerms(TDM_clinton, 30)[1:5],
-      findFreqTerms(TDM_fiorina, 10)[1:5],
-      findFreqTerms(TDM_cruz, 10)[1:5],
-      findFreqTerms(TDM_rubio, 10)[1:5]), nrow = 6, byrow = TRUE, dimnames = list(row_names ,col_names ) )
+# row_names <- c("Trump", "Sanders", "Clinton", "Fiorina", "Cruz", "Rubio" )
+# col_names <- c("most frequent", "Second", "Third", "Fourth", "Fifth")
 
-word_df<-as.data.frame(word_mat)
+# word_mat<-matrix(
+#     c(findFreqTerms(TDM_trump, 30)[1:5],
+#       findFreqTerms(TDM_sanders, 30)[1:5],
+#       findFreqTerms(TDM_clinton, 30)[1:5],
+#       findFreqTerms(TDM_fiorina, 10)[1:5],
+#       findFreqTerms(TDM_cruz, 10)[1:5],
+#       findFreqTerms(TDM_rubio, 10)[1:5]), nrow = 6, byrow = TRUE, dimnames = list(row_names ,col_names ) )
+# 
+# word_df<-as.data.frame(word_mat)
+# 
+# 
+# 
+# print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE, 
+#       html.table.attributes='border="3" align="center" ' )
 
-
-
-print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE, 
-      html.table.attributes='border="3" align="center" ' )
-
-
-```
-
-```{r}
-findFreqTerms(TDM_trump, 10)
-findFreqTerms(TDM_trump, 10)
 
 ```
-
 
 
 These tell a bit of a clearer story, i.e. we can almost read these words like sentences or sentence fragments. Both Bernie Sanders and Donald Trump again seems to come across similiarly as populists. The first ranking word for Donald Trump is _country_ and for Bernie Sanders it's _believe_. It's interesting to note that the notion of getting the "country going" comes through in the top three candidates.  
@@ -447,9 +444,7 @@ While word frequencies reveal differences between the approaches and personaliti
 ```
 
 
-####GRAPHICAL REPRESENTATION
 
-There's additional information in whether words used frequently by one candidate are used at all by another candidate. While the wordlcloud analysis gives some insight, we can analysis the data graphically for more quantitative information. Here is a graph of the "top" words used by all candidates
 
 ```{r, echo=FALSE}
 ## Build a matrix owith counts of specific words for a list of candidates
@@ -521,6 +516,28 @@ head(merged_candidates)
 # 2704      well     9      31      56       8 104
 
 ```
+
+```{r, echo=FALSE, results="asis"}
+
+library(xtable)
+
+c_1<-merged_candidates[with(merged_candidates, order(-clinton)), ]
+s_1<-merged_candidates[with(merged_candidates, order(-sanders)), ]
+f_1<-merged_candidates[with(merged_candidates, order(-fiorina)), ]
+t_1<-merged_candidates[with(merged_candidates, order(-trump)), ]
+
+compare_mf <- rbind(c_1[1:4,], f_1[1:4,], s_1[1:4,], t_1[1:4,])
+colnames(compare_mf)<-c("word", "clinton", "fionrina", "sanders", "trump")
+
+
+print(xtable(unique(compare_mf), digits=0), type='html', comment=FALSE, include.rownames=FALSE, 
+      html.table.attributes='border="3", align="center" ' )
+
+```
+
+####GRAPHICAL REPRESENTATION
+
+There's additional information in whether words used frequently by one candidate are used at all by another candidate. While the wordlcloud analysis gives some insight, we can analysis the data graphically for more quantitative information. Here is a graph of the "top" words used by all candidates
 
 ```{r, echo=FALSE, fig.align="center", fig.height= 5, fig.width=8, message=FALSE, warning=FALSE}
 
