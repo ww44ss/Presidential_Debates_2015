@@ -211,7 +211,7 @@ c_wordcloud <- function(t_c){
    
     color_map2<-c("#00003B","#041851","#4E0812" ,"#051E65", "#650A16", "#103374",  "#9F1A2D", "#482B25")
     
-    wordcloud(t_c, scale=c(4,0.4), max.words=40, min.freq=5, random.order=FALSE, rot.per=0.2, use.r.layout=FALSE, colors=color_map2)
+    wordcloud(t_c, scale=c(4,0.4), max.words=10000, min.freq=5, random.order=FALSE, rot.per=0.2, use.r.layout=FALSE, colors=color_map2)
 
     
 
@@ -406,20 +406,29 @@ row_names <- c("Trump", "Sanders", "Clinton", "Fiorina", "Cruz", "Rubio" )
 col_names <- c("most frequent", "Second", "Third", "Fourth", "Fifth")
 
 word_mat<-matrix(
-    c(findFreqTerms(TDM_trump, 15)[1:5],
-      findFreqTerms(TDM_sanders, 20)[1:5],
-      findFreqTerms(TDM_clinton, 20)[1:5],
+    c(findFreqTerms(TDM_trump, 30)[1:5],
+      findFreqTerms(TDM_sanders, 30)[1:5],
+      findFreqTerms(TDM_clinton, 30)[1:5],
       findFreqTerms(TDM_fiorina, 10)[1:5],
       findFreqTerms(TDM_cruz, 10)[1:5],
       findFreqTerms(TDM_rubio, 10)[1:5]), nrow = 6, byrow = TRUE, dimnames = list(row_names ,col_names ) )
 
 word_df<-as.data.frame(word_mat)
 
+
+
 print(xtable(word_df), type='html', comment=FALSE, include.rownames=TRUE, 
       html.table.attributes='border="3" align="center" ' )
 
 
 ```
+
+```{r}
+findFreqTerms(TDM_trump, 10)
+findFreqTerms(TDM_trump, 10)
+
+```
+
 
 
 These tell a bit of a clearer story, i.e. we can almost read these words like sentences or sentence fragments. Both Bernie Sanders and Donald Trump again seems to come across similiarly as populists. The first ranking word for Donald Trump is _country_ and for Bernie Sanders it's _believe_. It's interesting to note that the notion of getting the "country going" comes through in the top three candidates.  
@@ -499,19 +508,21 @@ merged_candidates$Row.names<-as.factor(merged_candidates$Row.names)
 
 merged_candidates<-merged_candidates[complete.cases(merged_candidates),]
 
+head(merged_candidates)
+
 
 ## This is what the data look like
-#       Row.names trump sanders clinton fiorina all
-# 1314     people    33      85      10      10 138
-# 1567    sanders     0     119       0       0 119
-# 747       going    44      44      10      10 108
-# 399     country    34      70       1       1 106
-# 680     fiorina     0       0      46      46  92
-# 756  government     0       7      40      40  87
+#      Row.names trump sanders clinton fiorina all
+# 1810    people    33      85      53      10 181
+# 2483     think     9      55      90       9 163
+# 1050     going    44      44      45      10 143
+# 561    country    34      70      25       1 130
+# 1363      know    23      26      56      19 124
+# 2704      well     9      31      56       8 104
 
 ```
 
-```{r, echo=FALSE, fig.align="center", fig.height= 5, fig.width=4, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, fig.align="center", fig.height= 5, fig.width=8, message=FALSE, warning=FALSE}
 
 library(reshape2)
 
@@ -530,7 +541,7 @@ library(ggplot2)
 # p 
 
 ```
-```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
 mc<-merged_candidates
 mc$rank <- 1:nrow(mc)
 ##normalize
@@ -539,20 +550,63 @@ mc$sanders<-mc$sanders/sum(mc$sanders)
 mc$trump<-mc$trump/sum(mc$trump)
 mc$fiorina<-mc$fiorina/sum(mc$fiorina)
 
-p <- ggplot(mc[mc$all>40,], aes(x = rank, size=3))
+mc_plot<-mc[mc$all>40,]
+
+p <- ggplot(mc_plot, aes(x = rank, size=3))
 #p <- p + geom_line(size=0.5)
 p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
 p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
 p <- p + geom_point(aes(y = trump, color="trump"), size=3)
 p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
-p <- p + theme(axis.text.x=element_text(angle=90, vjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
+p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
 #p <- p + coord_flip()
-p <- p + scale_x_discrete(breaks=1:25,
+p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
         labels=mc$Row.names)
-p <- p + ggtitle("CANDIDATE WORD COUNT")
+p <- p + ggtitle("MOST FREQUENT WORD COUNT")
 p <- p + xlab("")
 p <- p + ylab("normalized frequency")
 p 
+
+```
+
+####NORMALIZED Z STATISTICS
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
+
+##calculate mean
+
+mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5)])/4
+
+## subtract
+mc_plot$sanders<-(mc_plot$sanders - mc_plot$mean)
+mc_plot$clinton<-(mc_plot$clinton - mc_plot$mean)
+mc_plot$fiorina<-(mc_plot$fiorina - mc_plot$mean)
+mc_plot$trump<-(mc_plot$trump - mc_plot$mean)
+
+## calc squared dev
+mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2)/(4-1))
+
+mc_plot$sanders<-(mc_plot$sanders/mc_plot$sdev)
+mc_plot$clinton<-(mc_plot$clinton/mc_plot$sdev)
+mc_plot$fiorina<-(mc_plot$fiorina/mc_plot$sdev)
+mc_plot$trump<-(mc_plot$trump/mc_plot$sdev)
+
+
+
+# p <- ggplot(mc_plot, aes(x = rank, size=3))
+# #p <- p + geom_line(size=0.5)
+# p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
+# p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
+# p <- p + geom_point(aes(y = trump, color="trump"), size=3)
+# p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+# p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
+# #p <- p + coord_flip()
+# p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
+#         labels=mc$Row.names)
+# p <- p + ggtitle("Z_STATISTICS MOST FREQUENT WORDS")
+# p <- p + xlab("")
+# p <- p + ylab("normalized frequency")
+# p 
 
 ```
 
@@ -566,7 +620,7 @@ library(reshape2)
 merged_plot<-melt(merged_candidates)
 colnames(merged_plot)<-c("words", "candidate", "count")
 
-key_words = c("tax", "government", "climate", "class", "wall", "terror", "economy", "immigrant", "america", "veteran", "drug", "health", "gun", "educat")
+key_words = c("tax", "government", "climate", "class", "wall", "street","terror", "economy", "immigrant", "america", "veteran", "drug", "health", "gun", "education", "bankruptcy", "money", "women", "war", "rights", "abortion", "violence")
 merged_plot<-merged_plot[merged_plot$word %in% key_words, ]
 merged_plot<-merged_plot[!merged_plot$candidate=="all",]
 
@@ -607,7 +661,46 @@ p
 
 ```
 
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
 
+##calculate mean
+
+mc_plot<-mc
+
+mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5)])/4
+
+## subtract
+mc_plot$sanders<-(mc_plot$sanders - mc_plot$mean)
+mc_plot$clinton<-(mc_plot$clinton - mc_plot$mean)
+mc_plot$fiorina<-(mc_plot$fiorina - mc_plot$mean)
+mc_plot$trump<-(mc_plot$trump - mc_plot$mean)
+
+## calc squared dev
+mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2)/(4-1))
+
+mc_plot$sanders<-(mc_plot$sanders/mc_plot$sdev)
+mc_plot$clinton<-(mc_plot$clinton/mc_plot$sdev)
+mc_plot$fiorina<-(mc_plot$fiorina/mc_plot$sdev)
+mc_plot$trump<-(mc_plot$trump/mc_plot$sdev)
+
+
+
+p <- ggplot(mc_plot, aes(x = rank, size=3))
+#p <- p + geom_line(size=0.5)
+p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
+p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
+p <- p + geom_point(aes(y = trump, color="trump"), size=3)
+p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
+#p <- p + coord_flip()
+p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
+        labels=mc$Row.names)
+p <- p + ggtitle("Z_STATISTICS MOST FREQUENT WORDS")
+p <- p + xlab("")
+p <- p + ylab("normalized frequency")
+p 
+
+```
 
 ###WORD ASSOCIATIONS FROM BIGRAM TOKENIZATION
 
