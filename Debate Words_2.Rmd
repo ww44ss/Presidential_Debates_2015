@@ -8,23 +8,24 @@ output:
 ---
 
 ###SUMMARY
-This analysis is based on the premise that widening political divisions are not just about "what to do" but, more fundamentally, about "what the actual problem is." For instance even the conservative [National Review](http://www.brookings.edu/blogs/fixgov/posts/2015/06/03-iowa-bloomberg-galston) highlighted disagreement about the most important issues.  
-Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question looking for differences in the lanuguage of presidential candidates using texts from recent Republican and Democratic debates. 
+This analysis is based on the premise that widening political divisions are not just about "what to do" but, more fundamentally, about perceptions of "what the priorities are."  
+Perceptions of priorities are influenced, in part, by how frequently we hear about an issue. In turn, those who speak about issues we care about tend to attract out attention. It's the nature of this positive feedback loop that is the subject of exploration here; how can we detect, using statistics, systematic differences in language reflecting priorities and biases.  
+Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question looking for differences in the texts from recent Republican and Democratic presidential debates. 
 Key findings are:  
-1. "Wordcloud" visualization shows systematic differences between candidates, though more surprising are the similarities.  
-2. Word frquency analysis highlights positional differences between candidatates, but does not convey important context information.  
-3. Bigram toeknization and word-stem searches do the best job of revealing position differences between candidates.  
+1. "Wordcloud" visualization reveal differences between candidates, though similarities are just as surprising.  
+2. Frequency analysis of keywords highlights strong differences between candidatates, but misses important context.  
+3. Bigram toeknization and word-stem searches begin to reveal subtleties of meaning.   
 
 
 ###DATA SOURCES AND METHODS
-The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were pasted into Apple Pages and stored as unformated .txt files. From that point all processing is done with __R__ using capabilities of {tm} and associated libraries.  
+The text of the presidential debates are downloaded from the [UCSB Presidency Project](http://www.presidency.ucsb.edu/debates.php). Transcripts were pasted into Apple Pages and stored as unformatted .txt files. From that point all processing is done with __R__ using capabilities of {tm} and associated libraries.  
 
   
 
 ###CANDIDATE WORD-CLOUDS
 
 The quickest and most visual method to compare texts is word-frequency analysis using wordclouds. 
-Not surprisingly, word choices vary significantly between candidates. However, there are also some striking similarities.  
+Not surprisingly, word choices vary between candidates. However, there are also some striking similarities.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -115,7 +116,7 @@ candidate_text <- function(candidate, mydata){
     
     ## filter for candidate
     text<-mydata$text[mydata$name==candidate]
-    text<-paste(text, collapse = " ")
+    #text<-paste(text, collapse = " ")
 
     return(text)
 
@@ -211,7 +212,7 @@ c_wordcloud <- function(t_c){
    
     color_map2<-c("#00003B","#041851","#4E0812" ,"#051E65", "#650A16", "#103374",  "#9F1A2D", "#482B25")
     
-    wordcloud(t_c, scale=c(4,0.4), max.words=10000, min.freq=5, random.order=FALSE, rot.per=0.2, use.r.layout=FALSE, colors=color_map2)
+    wordcloud(t_c, scale=c(4,0.4), max.words=200, min.freq=5, random.order=FALSE, rot.per=0.2, use.r.layout=FALSE, colors=color_map2)
 
     
 
@@ -268,6 +269,10 @@ c_wordcloud <- function(t_c){
 ```
 
 
+
+
+
+
 <style>
   .col2 {
     columns: 2 300px;         /* number of columns and width in pixels*/
@@ -284,11 +289,11 @@ c_wordcloud <- function(t_c){
 
 
 
-Let's first just look at the word clouds of different candidates. We can address whether there are differences in the word frequencies used by candidates, as emphasized by the algorithm of the {wordcloud} package. Are there differences within the same party, between candidates, etc.? 
+Let's first compare the word clouds of candidates using the {wordcloud} package.   
 
-####THE POPULISTS: TRUMP AND SANDERS
+####TRUMP V. SANDERS
 
-Here are the word cloud of Donald Trump's and Bernie Sanders's dialogue at the debates. It's surprising that their frequent word choices like _people_, _country_, and _going_ are common, as if they are both painting a vision of the future that is personal (though radically different in nature).
+Differences between Donald Trump's and Bernie Sanders's dialogue at the debates are evident. Bernie's word cloud is larger due to have spoken more wtotal words. However, despite the differences, what is most surprising is the similarity of the clouds; word choices like _people_, _country_, and _going_ are common to both. Despite strong differences in policy, these word clouds reveal little about them.
 
 <div class="col2">
 
@@ -300,9 +305,9 @@ c_wordcloud(sanders_all)
 
 </div>
 
-####THE WOMEN: HILARY AND CARLY
+####HILARY V. CARLY
 
-In this case word clouds couldn't be more different. Hilary's emphasizes _think_ and _people_ while Carly's, a former business woman, primarily emphasizes _government_. 
+In this case word clouds couldn't be more different. Hilary's emphasizes _think_ and _people_ while Carly's, a former business woman, primarily emphasizes _government_. However, there is no context to judge, for isntance, what Ms. Fiorina's opinions or sentiments toward government are. Note again Hilary's wordcloud is larger than Ms. Fiorina's.
 
 <div class="col2">
 
@@ -314,9 +319,9 @@ c_wordcloud(fiorina_all)
 
 </div>
 
-####BRAINS VERSUS BRAUN: CRUZ AND HUCKABEE
+####CRUZ V. HUCKABEE
 
-Ted Cruz's wordcloud emphasizes wonkish technicalities, like _taxes_ and _washington_, while that of Mike Huckabee, a former minister, mixes the populist and a focus on  _government_. 
+Ted Cruz's wordcloud seems to emphasize wonkish financial technicalities, like _taxes_ and _washington_, while that of Mike Huckabee, a former minister, mixes language of Mr. Trump and Ms. Fiorina together. Again, no sentiment can be extracted.
 
 <div class="col2">
 
@@ -351,31 +356,26 @@ c_wordcloud(candidate_text_tc("SANDERS", d_nov))
 ```
 </div>
 
-__A NOTE ON WORDCLOUDS__ Both visually appealing and interesting, wordclouds reveal differences between candidate word choices which hint at political preferences and opinions, but do not reveal significant detail about them. For instance, differences in positions on policy and important matters like taxes, terrorism, immigration, and class division are not deducible from the wordclouds.  
 
 ###WORD FREQUENCY
 
-We can check word frequency directly by simply tokenizing the text and counting single words. Looking for the most frequent words used by each candidate may reveal some clearer differences. To do this analysis some additional words like "thats", "dont", "back", "can", "get", "cant", and "come" are suppressed.  
+We can check word frequency directly by simply tokenizing the text and counting single words. In a sense this is equivalnt to the wordcloud analysia, but it more quantitative. To do this analysis some additional words like "thats", "dont", "back", "can", "get", "cant", and "come" are suppressed.  
 
 
 <style>
-
+tr:hover {background-color: #f5f5f5}
 table { 
     width: 80%;
     display: table;
     border-collapse: collapse;
     border-spacing: 18px;
     border-color: #AAAAFF;
-    background-color: #D5CAB6;
-    text-align: center;
+    background-color: #D5DAB6;
     padding: 2px;
     font: 16px arial, sans-serif;
 }
-th{
+th, td{
     text-align: center;
-}, td {
-    text-align: left;
-    padding: 6px;
 }
 </style>
 
@@ -428,11 +428,7 @@ library(xtable)
 ```
 
 
-These tell a bit of a clearer story, i.e. we can almost read these words like sentences or sentence fragments. Both Bernie Sanders and Donald Trump again seems to come across similiarly as populists. The first ranking word for Donald Trump is _country_ and for Bernie Sanders it's _believe_. It's interesting to note that the notion of getting the "country going" comes through in the top three candidates.  
-More humorously, note that the word "clinton" figures in both Carly Fiorina's and Hilary Clinton's lists. These texts almost read as an assertion by Hilary and an counter argument by Carly.  
-Ted Cruz's frequent words again seem to focus on business and Carlo Rubio loves America.  
-  
-While word frequencies reveal differences between the approaches and personalities of the candidates, they don't by themsleves elucidate differences on specific policies or attitudes. Let's try something else.
+
 
 ```{r, echo=FALSE}
 
@@ -443,7 +439,7 @@ While word frequencies reveal differences between the approaches and personaliti
 
 ```
 
-
+This table of the most frequent word used by each candidate. 
 
 
 ```{r, echo=FALSE}
@@ -456,21 +452,32 @@ b<-as.data.frame(a)
 df_trump<-b
 colnames(df_trump)<-"trump"
 
+words_trump<-sum(df_trump)
+vocab_trump<-nrow(df_trump)
+
 a<-as.matrix(TDM_sanders)
 b<-as.data.frame(a)
 df_sanders<-b
 colnames(df_sanders)<-"sanders"
+
+words_sanders<-sum(df_sanders)
+vocab_sanders<-nrow(df_sanders)
 
 a<-as.matrix(TDM_fiorina)
 b<-as.data.frame(a)
 df_fiorina<-b
 colnames(df_fiorina)<-"fiorina"
 
+words_fiorina<-sum(df_fiorina)
+vocab_fiorina<-nrow(df_fiorina)
+
 a<-as.matrix(TDM_clinton)
 b<-as.data.frame(a)
 df_clinton<-b
 colnames(df_clinton)<-"clinton"
 
+words_clinton<-sum(df_clinton)
+vocab_clinton<-nrow(df_clinton)
 ## merge the data frames
 
 merged_candidates<-merge(df_trump, df_sanders, by=0, all=TRUE)
@@ -503,9 +510,6 @@ merged_candidates$Row.names<-as.factor(merged_candidates$Row.names)
 
 merged_candidates<-merged_candidates[complete.cases(merged_candidates),]
 
-head(merged_candidates)
-
-
 ## This is what the data look like
 #      Row.names trump sanders clinton fiorina all
 # 1810    people    33      85      53      10 181
@@ -527,17 +531,24 @@ f_1<-merged_candidates[with(merged_candidates, order(-fiorina)), ]
 t_1<-merged_candidates[with(merged_candidates, order(-trump)), ]
 
 compare_mf <- rbind(c_1[1:4,], f_1[1:4,], s_1[1:4,], t_1[1:4,])
-colnames(compare_mf)<-c("word", "clinton", "fionrina", "sanders", "trump")
+colnames(compare_mf)<-c("word", "trump", "sanders", "clinton", "fiorina", "sum")
 
 
 print(xtable(unique(compare_mf), digits=0), type='html', comment=FALSE, include.rownames=FALSE, 
-      html.table.attributes='border="3", align="center" ' )
+      html.table.attributes='border="3" align="center" ' )
 
 ```
 
+  
+Word count differ widely, reflecting the vocabulary choices made by each candidate. In addition, it's also apparent the number of words said by each candidate differed greatly due to the larger number of Republican candidates (~roughly ten) than Democratic one (~ roughly three). Indeed, the total number of words spoken by Carly Fiorina was `r words_fiorina` and her vocabularly of distinct words was `r vocab_fiorina`. By comparison, Bernie Sanders said `r words_sanders` total words, with a vocabulary of `r vocab_sanders` words.   
+
 ####GRAPHICAL REPRESENTATION
 
-There's additional information in whether words used frequently by one candidate are used at all by another candidate. While the wordlcloud analysis gives some insight, we can analysis the data graphically for more quantitative information. Here is a graph of the "top" words used by all candidates
+From the above, there may be information in comparing words used frequently by one candidate to frequency of use by another. Here is a graph of the "top" words used by all candidates. From the above we need to be careful to normalize the word count, 
+$\nu_{i} = W_{i} / \sum_{k=1}^{N} W_{k}$, where $\nu_{i}$ is the normalized frequency of word $i$ with count $W_{i}$.
+
+
+In the graph below the $\nu_{i}$ for each candidate are plotted for the most-used words as measured for the ensemble of all candidates. 
 
 ```{r, echo=FALSE, fig.align="center", fig.height= 5, fig.width=8, message=FALSE, warning=FALSE}
 
@@ -579,12 +590,14 @@ p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, face="italic", color=
 #p <- p + coord_flip()
 p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
         labels=mc$Row.names)
-p <- p + ggtitle("MOST FREQUENT WORD COUNT")
+p <- p + ggtitle("MOST-USED WORD FREQUENCIES")
 p <- p + xlab("")
 p <- p + ylab("normalized frequency")
 p 
 
 ```
+
+This starts to be much more informative. For instance, Carly Fiorina mentions the word _"government"_ as almost two percent of her word usage, whereas Donald Trump hardly mentions the word at all. Or notice that both Bernie Sanders and Donald Trump mention the word _"wall"_ more than their competitors while Bernie Sanders alone mentions the word _"street"_ with comparably high frequency.
 
 ####NORMALIZED Z STATISTICS
 
