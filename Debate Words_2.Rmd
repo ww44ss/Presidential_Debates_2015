@@ -9,11 +9,11 @@ output:
 
 ###SUMMARY
  
-Perceptions of priorities are influenced, in part, by how frequently we hear about an issue and also the context in which we hear it. Can we detect systematic differences in language reflecting political priorities and biases?
+Perception is influenced, in part, by how frequently we hear about an issue and also the context in which we hear it. This little study is a experiment to see if systematic differences in language reflecting political priorities and biases can be detected.
 Here, using standard NLP (Natural Lanuguage Processing) techniques, I explore this question looking for differences in the texts from recent Republican and Democratic presidential debates. 
 Key findings are:   
-1. "Wordcloud" visualization reveals some stylistic differences between candidates but no clarity on specifi postiions. .  
-2. Word-frequencies of selected "key-words" suggest positions differences. A _z-statistic_ can be used to highlight signficant differences between candidates.   
+1. "wordcloud" visualization reveals stylistic differences between candidates but no clarity on specific postiions.    
+2. Word-frequencies of selected "key-words" suggest positions differences. A _z-statistic_ and a _coefficient of variance_ can be used to highlight signficant differences between candidates.   
 3. Initial results for bigram tokenization reveal differences some differences in key-word context.   
 
 
@@ -23,8 +23,7 @@ The text of the presidential debates are downloaded from the [UCSB Presidency Pr
 
 ###CANDIDATE WORD-CLOUDS
 
-A quick and visually apprealing method to compare texts is word-frequency analysis using the {wordcloud} package in __R__. 
-Not surprisingly, word choices vary between candidates. However, there are also some striking similarities.  
+Wordclouds are a quick and visually apprealing method to compare texts. The {wordcloud} package in __R__ is used here.  Not surprisingly, word choices vary between candidates. However, there are also some striking and surprising similarities.  
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -331,16 +330,15 @@ c_wordcloud(fiorina_all)
 
 </div>
 
-####CRUZ V. HUCKABEE
+####CRUZ V. RUBIO
 
-Ted Cruz's wordcloud emphasize technicalities, like _"taxes"_ and _"washington"_, while that of Mike Huckabee, a former minister, seems a mix of Mr. Trump's and Ms. Fiorina's.
-
+Ted Cruz's wordcloud emphasizes technicalities like _"taxes"_ and _"washington"_, while that of Marco Rubio also emphasizes taxes.
 <div class="col2">
 
 
 ```{r, echo=TRUE, message=FALSE, fig.align="center", results="asis"}
 c_wordcloud(cruz_all)
-c_wordcloud(huckabee_all)
+c_wordcloud(rubio_all)
 ```
 
 </div>
@@ -467,6 +465,14 @@ colnames(df_trump)<-"trump"
 words_trump<-sum(df_trump)
 vocab_trump<-nrow(df_trump)
 
+a<-as.matrix(TDM_rubio)
+b<-as.data.frame(a)
+df_rubio<-b
+colnames(df_rubio)<-"rubio"
+
+words_trump<-sum(df_rubio)
+vocab_trump<-nrow(df_rubio)
+
 a<-as.matrix(TDM_sanders)
 b<-as.data.frame(a)
 df_sanders<-b
@@ -499,19 +505,30 @@ merged_candidates<-merge(merged_candidates, df_clinton, by="row.names", all=TRUE
 rownames(merged_candidates)<-merged_candidates$Row.names
 merged_candidates$Row.names <- NULL
 merged_candidates<-merge(merged_candidates, df_fiorina, by="row.names", all=TRUE)
+rownames(merged_candidates)<-merged_candidates$Row.names
+merged_candidates$Row.names <- NULL
+merged_candidates<-merge(merged_candidates, df_rubio, by="row.names", all=TRUE)
+rownames(merged_candidates)<-merged_candidates$Row.names
+
 
 
 ## fix NAs
 merged_candidates[is.na(merged_candidates)]<-0
 
+
+merged_candidates$Row.names<-as.factor(merged_candidates$Row.names)
+
+
+
 ##Get rid of self references
-merged_candidates["clinton", "clinton"]<-0
-merged_candidates["trump", "trump"]<-0
-merged_candidates["sanders", "sanders"]<-0
-merged_candidates["fiorina", "fiorina"]<-0
+# merged_candidates["clinton", "clinton"]<-0
+# merged_candidates["trump", "trump"]<-0
+# merged_candidates["sanders", "sanders"]<-0
+# merged_candidates["fiorina", "fiorina"]<-0
+# merged_candidates["rubio", "rubio"]<-0
 
 ## sum all
-merged_candidates$all <- merged_candidates$trump + merged_candidates$clinton + merged_candidates$sanders + merged_candidates$fiorina
+merged_candidates$all <- merged_candidates$trump + merged_candidates$clinton + merged_candidates$sanders + merged_candidates$fiorina + merged_candidates$rubio
 
 ## sort it
 merged_candidates<-merged_candidates[with(merged_candidates, order(-all)), ]
@@ -522,16 +539,19 @@ merged_candidates$Row.names<-as.factor(merged_candidates$Row.names)
 
 merged_candidates<-merged_candidates[complete.cases(merged_candidates),]
 
+
 ## This is what the data look like
-#      Row.names trump sanders clinton fiorina all
-# 1810    people    33      85      53      10 181
-# 2483     think     9      55      90       9 163
-# 1050     going    44      44      45      10 143
-# 561    country    34      70      25       1 130
-# 1363      know    23      26      56      19 124
-# 2704      well     9      31      56       8 104
+#         Row.names trump sanders clinton fiorina rubio all
+# people     people    33      85      53      10    36 217
+# think       think     9      55      90       9     4 167
+# going       going    44      44      45      10    19 162
+# country   country    34      70      25       1    17 147
+# know         know    23      26      56      19    21 145
+# well         well     9      31      56       8    11 115
 
 ```
+
+There are a total of `r dim(merged_candidates)[1]` words in the combined vocabulary of the candidates.  
 
 ```{r, echo=FALSE, results="asis"}
 
@@ -541,17 +561,21 @@ c_1<-merged_candidates[with(merged_candidates, order(-clinton)), ]
 s_1<-merged_candidates[with(merged_candidates, order(-sanders)), ]
 f_1<-merged_candidates[with(merged_candidates, order(-fiorina)), ]
 t_1<-merged_candidates[with(merged_candidates, order(-trump)), ]
+r_1<-merged_candidates[with(merged_candidates, order(-rubio)), ]
 
-compare_mf <- rbind(c_1[1:5,], f_1[1:5,], s_1[1:5,], t_1[1:5,])
-colnames(compare_mf)<-c("word", "trump", "sanders", "clinton", "fiorina", "sum")
+compare_mf <- rbind(c_1[1:5,], f_1[1:5,], s_1[1:5,], t_1[1:5,], r_1[1:5,])
+colnames(compare_mf)<-c("word", "trump", "sanders", "clinton", "fiorina", "rubio","SUM")
+
+compare_mf<-compare_mf[with(compare_mf, order(-SUM)),]
 
 ## compute column sums for each candidate
 trump_sum<-sum(merged_candidates[,2])
 sanders_sum<-sum(merged_candidates[,3])
 clinton_sum<-sum(merged_candidates[,4])
 fiorina_sum<-sum(merged_candidates[,5])
-sum_sum<-sum(merged_candidates[,6])
-sum_row<-c("SUM", trump_sum, sanders_sum, clinton_sum, fiorina_sum, sum_sum)
+rubio_sum<-sum(merged_candidates[,6])
+sum_sum<-sum(merged_candidates[,7])
+sum_row<-c("SUM", trump_sum, sanders_sum, clinton_sum, fiorina_sum, rubio_sum,sum_sum)
 
 #bind rows
 compare_mf$word<-as.character(compare_mf$word)
@@ -562,14 +586,14 @@ print(xtable(unique(compare_mf), digits=0), type='html', comment=FALSE, include.
 
 ```
 
-  
-Word counts differ widely. For instance Carly Fiorina said _"government"_" a total of forty times in her two debates, while Donald Trump didn't say it at all.  
+     
+Word counts differ widely. For instance, Carly Fiorina said _"government"_" a total of 40 times in her two debates, while Donald Trump didn't say it at all.  Bernie Sanders and Hilary Clinton said _"think"_ 145 times, while the three Republican candidates say it only 23 times among them.   
 The total number of words spoken by Carly Fiorina was `r words_fiorina` and her vocabularly of distinct words was `r vocab_fiorina`. By comparison, Bernie Sanders said `r words_sanders` total words, with a vocabulary of `r vocab_sanders` words.  
 
 
 ####NORMALIZED WORD FREQUENCIES
 
-From the above, there may be information in comparing words used frequently by one candidate to frequency of use by another. Here is a graph of the "top" words used by all candidates. From the above we need to be careful to normalize the word count, 
+From the above, there apprears to be information in comparing words frequency by one candidate to frequency of use by another. Here is a graph of the "top" words used by all candidates, normalized by word count, 
 $\nu_{i} = W_{i} / \sum_{k=1}^{N} W_{k}$, where $\nu_{i}$ is the normalized frequency of word $i$ with count $W_{i}$.
 
 
@@ -594,7 +618,8 @@ library(ggplot2)
 # p 
 
 ```
-```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
+
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=9, message=FALSE, warning=FALSE}
 mc<-merged_candidates
 mc$rank <- 1:nrow(mc)
 ##normalize
@@ -602,6 +627,7 @@ mc$clinton<-mc$clinton/sum(mc$clinton)
 mc$sanders<-mc$sanders/sum(mc$sanders)
 mc$trump<-mc$trump/sum(mc$trump)
 mc$fiorina<-mc$fiorina/sum(mc$fiorina)
+mc$rubio<-mc$rubio/sum(mc$rubio)
 
 mc_plot<-mc[mc$all>30,]
 
@@ -611,7 +637,8 @@ p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
 p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
 p <- p + geom_point(aes(y = trump, color="trump"), size=3)
 p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
-p <- p + scale_colour_manual(values = c("blue", "red","darkblue", "darkred"))
+p <- p + geom_point(aes(y = rubio, color="rubio"), size=3)
+p <- p + scale_colour_manual(values = c("blue", "red","orange", "darkblue", "darkred"))
 
 p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, vjust = 0.5, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
 #p <- p + coord_flip()
@@ -627,7 +654,7 @@ p
 This is much more informative. For instance, Carly Fiorina mentions the word _"government"_  more than two percent of her word usage, whereas Donald Trump doesn't mention the word at all. Notice that both Bernie Sanders and Donald Trump mention the word _"wall"_ significantly more than their competitors, while Bernie Sanders alone mentions the word _"street"_ with comparably high frequency. We'll revisit this below.   
 Many of the most frequent words convey little information about candidate positions. As with the wordcloud analysis, they convey mostly style. 
 
-####COEFFICEINT OF VARIATION
+####COEFFICIENT OF VARIATION
 
 To highlight differences between candidates we can look at the standard deviation of the word frequencies normalized to the mean value, or the Coefficient of Variation. 
 
@@ -635,21 +662,23 @@ To highlight differences between candidates we can look at the standard deviatio
 
 ##calculate mean
 
-mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5)])/4
+mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5,6)])/5
 
 ## subtract
 mc_plot$sanders<-(mc_plot$sanders - mc_plot$mean)
 mc_plot$clinton<-(mc_plot$clinton - mc_plot$mean)
 mc_plot$fiorina<-(mc_plot$fiorina - mc_plot$mean)
 mc_plot$trump<-(mc_plot$trump - mc_plot$mean)
+mc_plot$rubio<-(mc_plot$rubio - mc_plot$mean)
 
 ## calc squared dev
-mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2)/(4-1))
+mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2+(mc_plot$rubio)^2)/(5-1))
 
 mc_plot$sanders<-(mc_plot$sanders/mc_plot$sdev)
 mc_plot$clinton<-(mc_plot$clinton/mc_plot$sdev)
 mc_plot$fiorina<-(mc_plot$fiorina/mc_plot$sdev)
 mc_plot$trump<-(mc_plot$trump/mc_plot$sdev)
+mc_plot$rubio<-(mc_plot$rubio/mc_plot$sdev)
 
 
 
@@ -661,9 +690,9 @@ p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, vjust=.5, face="itali
 #p <- p + coord_flip()
 p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
         labels=mc$Row.names)
-p <- p + ggtitle("VARIATION OF FREQUENT WORDS")
+p <- p + ggtitle("CV OF FREQUENT WORDS")
 p <- p + xlab("")
-p <- p + ylab("coefficient")
+p <- p + ylab("coefficient of variation")
 p 
 
 ```
@@ -680,7 +709,7 @@ library(reshape2)
 merged_plot<-melt(merged_candidates)
 colnames(merged_plot)<-c("words", "candidate", "count")
 
-key_words = c("tax", "government", "climate", "class", "wall", "street","terror", "economy", "immigrant", "america", "veteran", "drug", "health", "gun", "education", "bankruptcy", "money", "women", "war", "rights", "abortion", "violence", "theyre", "going" )
+key_words = c("tax", "government", "climate", "class", "wall", "street","terror", "economy", "immigrant", "america", "veteran", "drug", "health", "gun", "education", "bankruptcy", "money", "women", "war", "rights", "abortion", "violence", "theyre", "going", "major" )
 
 ##select just key_words
 merged_plot<-merged_plot[merged_plot$word %in% key_words, ]
@@ -700,8 +729,9 @@ p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
 p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
 p <- p + geom_point(aes(y = trump, color="trump"), size=3)
 p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+p <- p + geom_point(aes(y = rubio, color="rubio"), size=3)
 p <- p + theme(axis.text.x=element_text(angle=90, hjust=1,face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
-p <- p + scale_colour_manual(values = c("blue", "red","darkblue", "darkred"))
+p <- p + scale_colour_manual(values = c("blue", "red","orange", "darkblue", "darkred"))
 #p <- p + coord_flip()
 p <- p + scale_x_discrete(breaks=1:25,
         labels=mc$Row.names)
@@ -714,27 +744,29 @@ p
 
 An apparent problem is that many of the words of interest have fairly low frequencies. To better distinguish signficant differences, we can calculate a simple $z$ statistic by taking the mean and standard deviation of the word frequencies.
 
-```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=9, message=FALSE, warning=FALSE}
 
 ##calculate mean
 
 mc_plot<-mc
 
-mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5)])/4
+mc_plot$mean <- rowSums(mc_plot[,c(2,3,4,5,6)])/5
 
 ## subtract
 mc_plot$sanders<-(mc_plot$sanders - mc_plot$mean)
 mc_plot$clinton<-(mc_plot$clinton - mc_plot$mean)
 mc_plot$fiorina<-(mc_plot$fiorina - mc_plot$mean)
 mc_plot$trump<-(mc_plot$trump - mc_plot$mean)
+mc_plot$rubio<-(mc_plot$rubio - mc_plot$mean)
 
 ## calc squared dev
-mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2)/(4-1))
+mc_plot$sdev<- sqrt( ((mc_plot$sanders)^2 + (mc_plot$clinton)^2 + (mc_plot$fiorina)^2 + (mc_plot$trump)^2+ (mc_plot$rubio)^2)/(5-1))
 
 mc_plot$sanders<-(mc_plot$sanders/mc_plot$sdev)
 mc_plot$clinton<-(mc_plot$clinton/mc_plot$sdev)
 mc_plot$fiorina<-(mc_plot$fiorina/mc_plot$sdev)
 mc_plot$trump<-(mc_plot$trump/mc_plot$sdev)
+mc_plot$rubio<-(mc_plot$rubio/mc_plot$sdev)
 
 
 
@@ -744,8 +776,9 @@ p <- p + geom_point(aes(y = clinton, color="clinton"), size=3)
 p <- p + geom_point(aes(y = sanders, color="sanders"), size=3)
 p <- p + geom_point(aes(y = trump, color="trump"), size=3)
 p <- p + geom_point(aes(y = fiorina, color="fiorina"), size=3)
+p <- p + geom_point(aes(y = rubio, color="rubio"), size=3)
 p <- p + theme(axis.text.x=element_text(angle=90, hjust=1, face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"),legend.title=element_blank())
-p <- p + scale_colour_manual(values = c("blue", "red","darkblue", "darkred"))
+p <- p + scale_colour_manual(values = c("blue", "red","orange","darkblue", "darkred"))
 #p <- p + coord_flip()
 p <- p + scale_x_discrete(breaks=1:length(mc$Row.names),
         labels=mc$Row.names)
@@ -787,6 +820,7 @@ trump_bigrams <- sort(table(bigramTokenizer(trump_all)), decreasing = TRUE)
 sanders_bigrams <- sort(table(bigramTokenizer(sanders_all)), decreasing = TRUE)
 clinton_bigrams <- sort(table(bigramTokenizer(clinton_all)), decreasing = TRUE)
 fiorina_bigrams <- sort(table(bigramTokenizer(fiorina_all)), decreasing = TRUE)
+rubio_bigrams <- sort(table(bigramTokenizer(rubio_all)), decreasing = TRUE)
 
 ## find candidate trigrams
 
@@ -797,6 +831,7 @@ trump_trigrams <- sort(table(trigramTokenizer(trump_all)), decreasing = TRUE)
 sanders_trigrams <- sort(table(trigramTokenizer(sanders_all)), decreasing = TRUE)
 clinton_trigrams <- sort(table(trigramTokenizer(clinton_all)), decreasing = TRUE)
 fiorina_trigrams <- sort(table(trigramTokenizer(fiorina_all)), decreasing = TRUE)
+rubio_trigrams <- sort(table(trigramTokenizer(rubio_all)), decreasing = TRUE)
 
 trigram_finder <- function(word, trigram_table){
     relevant_trigrams <- trigram_table[grep(word, rownames(trigram_table), ignore.case=TRUE)]
@@ -813,9 +848,35 @@ bigram_finder <- function(word, bigram_table){
 
 ####"TAX" IN CONTEXT
 
-The word _"tax"_ is heavily used by Carly Fiorina and Donald Trump. Let's look at the bigrams starting with the word _"tax"_
+The word _"tax"_ is heavily used by all the Republican candidates, and the context is almost identical in all cases. Carlo is the most prolific user of the word. Many of the words used with _"tax"_, for example "tax something", "tax someone", "tax everyone", "tax money" , etc. paint a definite more aggressive image than do the words associated with "tax" by Carly Fiorina, who focuses mostly on policy terms. 
+
 
 ```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
+
+
+word_sample <- "^tax"
+a<-bigram_finder(word_sample, rubio_bigrams)
+a<-as.data.frame(a)
+colnames(a)<-word_sample
+
+bigram_freq<-a
+
+library(ggplot2)
+
+p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+p <- p + geom_bar(fill="#751B1C", stat="identity")
+p <- p + ggtitle(paste0("RUBIO bigram sample: \"", word_sample,"\" "))
+p <- p + xlab("bigrams")
+p <- p + ylab("count")
+p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0, 2, 4, 6, 8, 10))
+p <- p + coord_flip()
+plot_tax_rubio <- p
+p
+
+```
+
+```{r, echo=FALSE, fig.align="center", fig.height=2.3, fig.width=6, warning=FALSE, message=FALSE}
 
 
 word_sample <- "^tax"
@@ -840,59 +901,29 @@ p
 
 ```
 
-We can drill down a bit on _"tax code"_ using trigrams. While the number of cases are limited, we get a slight hint of her position here. 
+Donald Trump's choice of words paring with _"tax"_ are similarly focused mostly on policy terms.
 
-```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
-
-
-word_sample <- "^tax code"
-a<-bigram_finder(word_sample, fiorina_trigrams)
-a<-as.data.frame(a)
-colnames(a)<-word_sample
-
-bigram_freq<-a
-
-library(ggplot2)
-
-p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
-p <- p + geom_bar(fill="#751B1C", stat="identity")
-p <- p + ggtitle(paste0("FIORINA trigram sample: \"", word_sample,"\" "))
-p <- p + xlab("bigrams")
-p <- p + ylab("count")
-p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
-p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0, 2, 4, 6, 8, 10))
-p <- p + coord_flip()
-plot_tax_fiorina <- p
-p
-
-```
-
-
- 
-
-Donald Trump's choice of words paring with _"tax"_ are mostly negative.
-
-```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
-
-
-word_sample <- "^tax"
-a<-bigram_finder(word_sample, trump_bigrams)
-a<-as.data.frame(a)
-colnames(a)<-word_sample
-
-bigram_freq<-a
-
-library(ggplot2)
-
-p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
-p <- p + geom_bar(fill="#751B1C", stat="identity")
-p <- p + ggtitle(paste0("TRUMP bigram sample: \"", word_sample,"\" "))
-p <- p + xlab("bigrams")
-p <- p + ylab("count")
-p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
-p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0,2,4,6,8,10))
-p <- p + coord_flip()
-p
+```{r, echo=FALSE, fig.align="center", fig.height=3, fig.width=6, warning=FALSE, message=FALSE}
+# 
+# 
+# word_sample <- "^tax"
+# a<-bigram_finder(word_sample, trump_bigrams)
+# a<-as.data.frame(a)
+# colnames(a)<-word_sample
+# 
+# bigram_freq<-a
+# 
+# library(ggplot2)
+# 
+# p <- ggplot(bigram_freq, aes(x=rownames(bigram_freq), y = bigram_freq[,1]))
+# p <- p + geom_bar(fill="#751B1C", stat="identity")
+# p <- p + ggtitle(paste0("TRUMP bigram sample: \"", word_sample,"\" "))
+# p <- p + xlab("bigrams")
+# p <- p + ylab("count")
+# p <- p + theme(axis.text.x=element_text(face="italic", color="#222222"), axis.text.y=element_text(face="italic", color="#222222"))
+# p <- p + scale_y_continuous(limits=c(0, 10), breaks=c(0,2,4,6,8,10))
+# p <- p + coord_flip()
+# p
 
 ```
 
@@ -901,7 +932,7 @@ p
 The word _"wall"_ is used frequently by both Bernie Sanders and Donald Trump. We can clarify the context by looking at bigrams. In this case it's clear Bernie Sanders is referring exclusively to "wall street" while Donald Trump mostly refers to his proposal to build border walls. 
 
 
-```{r, echo=FALSE, fig.align="center", fig.height=2, fig.width=6, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, fig.align="center", fig.height=1.5, fig.width=6, warning=FALSE, message=FALSE}
 
 
 word_sample <- "^wall"
@@ -956,7 +987,7 @@ p
 
 ####"THEYRE" IN CONTEXT
 
-Donald Trump uses the word _"theyre"_ signficantly more than other candidates. The context as revealed by bigrams almost sounds like the script of a zombie movie. "theyre going", "theyre south", "theyre feeding", theyre coming". While no position is advocated here, this does begin to hint at a sentiment that, whoever "they" are, they're after us. 
+Donald Trump uses the word _"theyre"_ signficantly more than other candidates. The context, as revealed by bigrams, sounds like the script of a zombie movie. "theyre going", "theyre south", "theyre feeding", and "theyre coming". The language hints toward a sentiment that, whoever "they" are, they're a threat. 
 
 ```{r, echo=FALSE, fig.align="center", fig.height=4, fig.width=6, warning=FALSE, message=FALSE}
 
@@ -983,14 +1014,14 @@ p
 ```
 
 
-_NOTE:_ after this anlaysis was completed, the [New York Times](http://www.nytimes.com/interactive/2015/12/05/us/politics/donald-trump-talk.html) published a story on linguistic style of Donald Trump. Conclusions are similar. 
+_NOTE:_ after this work was completed, the [New York Times](http://www.nytimes.com/interactive/2015/12/05/us/politics/donald-trump-talk.html) published a story on linguistic style of Donald Trump with similar conclusions. Their study included the words both "we" and "they" (we is suppressed here as a stop word) and included a much larger amount of text.
 
 
 
 ###CONCLUSIONS
-Word-clouds provide insight into differences in style but do not delineate well between candiddate positions. Surprisingly opposing candidates can have very similar word clouds.
-Looking at "most frequent" provides limited insight into differences between candidate positions, though many frequently used words provide no insight 
-By looking at the co-efficient of variance and selecting for key words, we can highlight striking differences between candidates. 
+Word-clouds provide insight into differences in style but do not delineate well between candiddate positions. Surprisingly opposing candidates can have very similar word clouds.  
+Looking at "most frequent" provides limited insight into differences between candidate positions, though many frequently used words provide no information of interest.   
+By looking at the _co-efficient of variance_ and selecting for key words, we can highlight differences between candidate usages which are of greater interest.    
 Bigrams provide key context difference and being to hint at sentiment. 
 
 ###NEXT STEPS
