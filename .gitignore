@@ -3,3 +3,7 @@
 
 # Ada Library Information
 *.ali
+
+# text files
+# this is to avoid uploading the word vectors
+*.txt
